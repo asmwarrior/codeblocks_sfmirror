@@ -106,9 +106,6 @@
 		<Project filename="plugins/contrib/MouseSap/MouseSap_wx31_64.cbp">
 			<Depends filename="CodeBlocks_wx31_64.cbp" />
 		</Project>
-		<Project filename="plugins/contrib/NassiShneiderman/NassiShneiderman_wx31_64.cbp">
-			<Depends filename="CodeBlocks_wx31_64.cbp" />
-		</Project>
 		<Project filename="plugins/contrib/profiler/cbprofiler_wx31_64.cbp">
 			<Depends filename="CodeBlocks_wx31_64.cbp" />
 		</Project>
