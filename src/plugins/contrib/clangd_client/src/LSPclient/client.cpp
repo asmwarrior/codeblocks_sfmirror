@@ -481,6 +481,10 @@ ProcessLanguageClient::ProcessLanguageClient(const cbProject* pProject, const ch
     int ccMaxMatches = cfg->ReadInt(_T("/max_matches"), 20);
     command += wxString::Format(" --limit-results=%d", ccMaxMatches);
 
+    // clangd writes too much disk : CPP-19402 https://youtrack.jetbrains.com/issue/CPP-19402
+    // "-pch-storage=memory"
+    command += " -pch-storage=memory";
+
     if (wxDirExists(clangdResourceDir))
     {
         QuoteStringIfNeeded(clangdResourceDir);
