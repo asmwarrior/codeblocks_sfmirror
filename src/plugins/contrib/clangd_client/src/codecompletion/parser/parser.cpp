@@ -2986,7 +2986,8 @@ void Parser::OnLSP_HoverResponse(wxCommandEvent& event, std::vector<ClgdCCToken>
         // Example Hover contents: L"instance-method HelloWxWorldFrame::OnAbout\n\nType: void\nParameters:\n- wxCommandEvent & event\n\n// In HelloWxWorldFrame\nprivate: void HelloWxWorldFrame::OnAbout(wxCommandEvent &event)"
         // get string array of hover info separated at /n chars.
         wxString hoverString = contentsValue;
-        hoverString.Replace("\n\n", "\n"); //remove double newlines
+        wxString orgHoverString = hoverString;
+        hoverString.Replace("\n\n", "\n"); //remove double newline chars
         wxArrayString vHoverInfo = GetArrayFromString(hoverString, "\n");
 
         //// **Debugging** show incoming data
@@ -3065,6 +3066,7 @@ void Parser::OnLSP_HoverResponse(wxCommandEvent& event, std::vector<ClgdCCToken>
         //        for (size_t ii=0; ii<v_HoverTokens.size(); ++ii)
         //            pLogMgr->DebugLog(wxString::Format("v_HoverTokens[%d]:%s", int(ii), v_HoverTokens[ii].displayName));
         //}
+        //v_HoverTokens.push_back(ClgdCCToken(0, orgHoverString, orgHoverString));
 
         // The first entry is "~NoSort~", so count must be > 1
         if (v_HoverTokens.size() > 1 )
