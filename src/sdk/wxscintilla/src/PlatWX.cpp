@@ -198,7 +198,30 @@ void Font::Create(const FontParameters &fp) {
         false,
         sci2wx(fp.faceName),
         encoding);
+
+#ifdef __WXMSW__
+    // enable the smooth font on Windows by default
+    // font rendering issue when using C::B under windows remote desktop
+    // https://forums.codeblocks.org/index.php/topic,25146.msg171484.html#msg171484
+
+    wxString nativeDesc = font.GetNativeFontInfoDesc();
+    int index = 0;
+    for (size_t pos = 0, start = 0; pos <= nativeDesc.length(); )
+    {
+        pos = nativeDesc.find(";", start);
+        index++;
+        if (index == 14) // the index 14 for wx 3.2.1
+        {
+            // enable the cleartype option of the font
+            nativeDesc.replace(start, pos - start, "5");
+            bool result = font.SetNativeFontInfo(nativeDesc);
+            break;
+        }
+        start = pos+1;
+    }
+#endif // __WXMSW__
     wxFontWithAscent* newFont = new wxFontWithAscent(font);
+
     fid = newFont;
 
 #ifdef HAVE_DIRECTWRITE_TECHNOLOGY
