@@ -4454,10 +4454,15 @@ void ClgdCompletion::OnEditorClosed(CodeBlocksEvent& event)
         m_AllFunctionsScopes[filename].m_NameSpaces.clear();
         m_AllFunctionsScopes[filename].parsed = false;
 
+        // if the parser is still valid, do the following, otherwise, the GetParser will return wrong parser pointer
+        // and lead to a crash
+        if (GetParseManager()->GetParserByFilename(filename))
+        {
         if (GetParseManager()->GetParser().ClassBrowserOptions().displayFilter == bdfFile)
         {
             s_ClassBrowserCaller = wxString::Format("%s:%d",__FUNCTION__, __LINE__);
             GetParseManager()->UpdateClassBrowser();
+        }
         }
     }
 
