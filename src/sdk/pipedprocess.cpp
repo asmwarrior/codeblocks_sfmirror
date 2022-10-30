@@ -155,6 +155,7 @@ int PipedProcess::Launch(const wxString& cmd, int flags)
     // wxWidgets < 3.1.0 on Unix has a bug in wxExecute() with non-ASCII characters
     // See https://github.com/wxWidgets/wxWidgets/issues/16206
 #if !defined __WXGTK__ || wxCHECK_VERSION(3, 1, 0)
+    // wxSetlocale(LC_ALL, "en_US.utf8"); This does not work on Win7, the command is sent by translate the wxString to local narrow string
     m_Pid = wxExecute(cmd, flags, this);
 #else
     char* currentLocale = wxStrdup(wxSetlocale(LC_ALL, ""));
