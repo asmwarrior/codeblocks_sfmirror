@@ -81,9 +81,6 @@
 		<Project filename="plugins/contrib/FileManager/FileManager_wx32_64.cbp">
 			<Depends filename="CodeBlocks_wx32_64.cbp" />
 		</Project>
- 		<Project filename="plugins/contrib/FortranProject/FortranProject_cbsvn_wx32_64.cbp">
-			<Depends filename="CodeBlocks_wx32_64.cbp" />
-		</Project>
 		<Project filename="plugins/contrib/headerfixup/headerfixup_wx32_64.cbp">
 			<Depends filename="CodeBlocks_wx32_64.cbp" />
 		</Project>
@@ -104,9 +101,6 @@
 			<Depends filename="plugins/contrib/wxContribItems/wxContribItems_wx32_64.cbp" />
 		</Project>
 		<Project filename="plugins/contrib/MouseSap/MouseSap_wx32_64.cbp">
-			<Depends filename="CodeBlocks_wx32_64.cbp" />
-		</Project>
-		<Project filename="plugins/contrib/NassiShneiderman/NassiShneiderman_wx32_64.cbp">
 			<Depends filename="CodeBlocks_wx32_64.cbp" />
 		</Project>
 		<Project filename="plugins/contrib/profiler/cbprofiler_wx32_64.cbp">
