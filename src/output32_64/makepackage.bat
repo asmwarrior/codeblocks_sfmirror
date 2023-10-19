@@ -4,11 +4,11 @@ REM Step 1: Remove all files with .a extension
 del /S *.a
 
 REM Step 2: Copy all files and folders to the "package" subfolder
-mkdir package
-xcopy /S /I /E /Y *.* package\
+REM mkdir package
+xcopy /S /I /E /Y *.* ..\package\
 
 REM Step 3: Go to the "package" folder
-cd package
+cd ..\package
 
 REM Step 4: Zip all files and folders to a zip file with the current date
 for /f "tokens=2 delims==" %%G in ('wmic os get localdatetime /value') do set "datetime=%%G"
