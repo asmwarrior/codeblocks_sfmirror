@@ -1803,7 +1803,7 @@ void ParseManagerBase::ComputeCallTip(TokenTree*         tree,
                 smallTokenizer.InitFromBuffer(token->m_FullType + _T('\n'));
                 tk = tree->at(tree->TokenExists(smallTokenizer.GetToken(), -1, tkFunction|tkMacroDef|tkVariable));
                 // only if the expanded result is a single token
-                if (tk && smallTokenizer.PeekToken().empty())
+                if (tk && smallTokenizer.PeekToken().m_Lexeme.empty())
                     token = tk;
             }
         }

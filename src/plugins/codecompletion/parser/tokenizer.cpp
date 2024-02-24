@@ -875,18 +875,13 @@ bool Tokenizer::SkipUnwanted()
     return NotEOF();
 }
 
-wxString Tokenizer::GetToken()
+PPToken Tokenizer::GetToken()
 {
-    m_UndoTokenIndex = m_TokenIndex;
-    m_UndoLineNumber = m_LineNumber;
-    m_UndoNestLevel  = m_NestLevel;
-
-    if (m_PeekAvailable)
+    if (m_PPTokenStream.size() > 0)
     {
-        m_TokenIndex = m_PeekTokenIndex;
-        m_LineNumber = m_PeekLineNumber;
-        m_NestLevel  = m_PeekNestLevel;
-        m_Token      = m_PeekToken;
+        PPToken oldestPPToken = m_PPTokenStream.front();
+        m_PPTokenStream.pop_front();
+        return oldestPPToken;
     }
     else
     {
@@ -898,14 +893,15 @@ wxString Tokenizer::GetToken()
         }
         else
             m_Token.Clear();
+
+        // construct a PPToken from the current member variables:
+        // m_Token, m_TokenIndex, m_LineNumber, m_NestLevel
+        PPToken token(m_Token, m_TokenIndex, m_LineNumber, m_NestLevel);
+        return token;
     }
-
-    m_PeekAvailable = false;
-
-    return m_Token;
 }
 
-wxString Tokenizer::PeekToken()
+PPToken Tokenizer::PeekToken()
 {
     if (!m_PeekAvailable)
     {
@@ -921,30 +917,22 @@ wxString Tokenizer::PeekToken()
         // old m_TokenIndex values before we call the DoGetToken();
         // NOTE: The m_Saved... vars will be reset to the correct position as necessary when a
         // ReplaceBufferText() is done.
-        m_SavedTokenIndex   = m_TokenIndex;
-        m_SavedLineNumber   = m_LineNumber;
-        m_SavedNestingLevel = m_NestLevel;
+
+        PPToken peekToken;
 
         if (SkipUnwanted())
         {
-            m_PeekToken = DoGetToken();
+            PPToken peekToken = DoGetToken();
             if (m_PeekToken == _T("(") && m_State^tsRawExpression)
-                ReadParentheses(m_PeekToken);
+                ReadParentheses(peekToken.m_Lexeme);
         }
         else
-            m_PeekToken.Clear();
+            ;// peekToken.Clear();
 
-        m_PeekAvailable     = true; // Set after DoGetToken() to avoid recursive PeekToken() calls.
-        m_PeekTokenIndex    = m_TokenIndex;
-        m_PeekLineNumber    = m_LineNumber;
-        m_PeekNestLevel     = m_NestLevel;
-
-        m_TokenIndex        = m_SavedTokenIndex;
-        m_LineNumber        = m_SavedLineNumber;
-        m_NestLevel         = m_SavedNestingLevel;
+        m_PPTokenStream.push_front(peekToken);
+        return peekToken;
+        // m_PeekAvailable     = true; // Set after DoGetToken() to avoid recursive PeekToken() calls.
     }
-
-    return m_PeekToken;
 }
 /* peek is always available when we run UngetToken() once, actually the m_TokenIndex is moved
  * backward one step. Note that the m_UndoTokenIndex value is not updated in this function, which
@@ -980,7 +968,7 @@ void Tokenizer::UngetToken()
  * then run one step again, see the details in:
  * http://forums.codeblocks.org/index.php/topic,18315.msg125579.html#msg125579
  */
-wxString Tokenizer::DoGetToken()
+PPToken Tokenizer::DoGetToken()
 {
     while(true)
     {
@@ -1020,18 +1008,20 @@ bool Tokenizer::Lex()
 
         if (IsEOF())
         {
-            m_Lex = wxEmptyString;
+            m_Lex.m_Lexeme = wxEmptyString;
+            m_Lex.m_Kind = PPTokenKind::EndOfFile;
             return false;
         }
 
         identifier = true;
-        m_Lex = m_Buffer.Mid(start, m_TokenIndex - start);
+        m_Lex.m_Kind = PPTokenKind::Identifier;
+        m_Lex.m_Lexeme = m_Buffer.Mid(start, m_TokenIndex - start);
     }
 #ifdef __WXMSW__ // This is a Windows only bug!
     // fetch non-English characters, see more details in: http://forums.codeblocks.org/index.php/topic,11387.0.html
     else if (c == 178 || c == 179 || c == 185)
     {
-        m_Lex = c;
+        m_Lex.m_Lexeme = c;
         MoveToNextChar();
     }
 #endif
@@ -1043,17 +1033,19 @@ bool Tokenizer::Lex()
 
         if (IsEOF())
         {
-            m_Lex = wxEmptyString;
+            m_Lex.m_Lexeme = wxEmptyString;
+            m_Lex.m_Kind = PPTokenKind::EndOfFile;
             return false;
         }
 
-        m_Lex = m_Buffer.Mid(start, m_TokenIndex - start);
+        m_Lex.m_Lexeme = m_Buffer.Mid(start, m_TokenIndex - start);
     }
     else if ( (c == '"') || (c == '\'') )
     {
         SkipString();
         //Now, we are after the end of the C-string, so return the whole string as a token.
-        m_Lex = m_Buffer.Mid(start, m_TokenIndex - start);
+        m_Lex.m_Lexeme = m_Buffer.Mid(start, m_TokenIndex - start);
+        m_Lex.m_Kind = PPTokenKind::String;
     }
     else if (c == ':')
     {
@@ -1062,12 +1054,14 @@ bool Tokenizer::Lex()
             MoveToNextChar();
             MoveToNextChar();
             // this only copies a pointer, but operator= allocates memory and does a memcpy!
-            m_Lex.assign(TokenizerConsts::colon_colon);
+            m_Lex.m_Lexeme.assign(TokenizerConsts::colon_colon);
+            m_Lex.m_Kind = PPTokenKind::DoubleColon;
         }
         else
         {
             MoveToNextChar();
-            m_Lex.assign(TokenizerConsts::colon);
+            m_Lex.m_Lexeme.assign(TokenizerConsts::colon);
+            m_Lex.m_Kind = PPTokenKind::Colon;
         }
     }
     else if (c == '=')
@@ -1077,13 +1071,13 @@ bool Tokenizer::Lex()
         {
             MoveToNextChar();
             MoveToNextChar();
-            m_Lex = m_Buffer.Mid(start, m_TokenIndex - start);
+            m_Lex.m_Lexeme = m_Buffer.Mid(start, m_TokenIndex - start);
         }
         else
         {
             MoveToNextChar();
             // this only copies a pointer, but operator= allocates memory and does a memcpy!
-            m_Lex.assign(TokenizerConsts::equal);
+            m_Lex.m_Lexeme.assign(TokenizerConsts::equal);
         }
     }
     else
@@ -1093,7 +1087,7 @@ bool Tokenizer::Lex()
         else if (c == '}')
             --m_NestLevel;
 
-        m_Lex = c;
+        m_Lex.m_Lexeme = c;
         MoveToNextChar();
     }
 
@@ -1107,7 +1101,7 @@ bool Tokenizer::Lex()
 
 bool Tokenizer::CheckMacroUsageAndReplace()
 {
-    const int id = m_TokenTree->TokenExists(m_Lex, -1, tkMacroDef);
+    const int id = m_TokenTree->TokenExists(m_Lex.m_Lexeme, -1, tkMacroDef);
     if (id != -1)
     {
         const Token* token = m_TokenTree->at(id);
@@ -1831,7 +1825,7 @@ bool Tokenizer::GetMacroExpandedText(const Token* tk, wxString& expandedText)
     if (!SplitArguments(actualArgs))
     {
         // reset the m_Lex since macro expansion failed
-        m_Lex = tk->m_Name;
+        m_Lex.m_Lexeme = tk->m_Name;
         return false;
     }
 
