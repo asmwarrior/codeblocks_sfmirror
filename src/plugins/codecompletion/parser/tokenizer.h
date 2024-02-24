@@ -15,6 +15,19 @@
 #include <list>
 
 
+enum class PPTokenKind
+{
+    Identifier = 0,
+    EndOfFile,
+    LeftBrace,
+    RightBrace,
+    Digit,
+    Char,
+    String,
+    DoubleColon,
+    Colon,
+};
+
 /// Enum defines the skip state of the Tokenizer
 enum TokenizerState
 {
@@ -48,6 +61,50 @@ struct TokenizerOptions
     /** do we store the doxygen like document */
     bool storeDocumentation;
 };
+
+/** a token returned from the preprocessor */
+class PPToken
+{
+public:
+    wxString m_Lexeme;  // the content of the text string
+    PPTokenKind m_Kind; // which kind of token, such as identifier, punctuation
+    int m_TokenIndex;   // the char index from the beginning of the char buffer
+    int m_LineNumber;   // line number, it is normally 1 based
+    int m_NestLevel;    // nest level, either { or (
+
+    PPToken()
+        : m_TokenIndex(0),
+          m_LineNumber(0),
+          m_NestLevel(0)
+    {
+    }
+
+    PPToken(const PPToken& other)
+        : m_Lexeme(other.m_Lexeme),
+          m_Kind(other.m_Kind),
+          m_TokenIndex(other.m_TokenIndex),
+          m_LineNumber(other.m_LineNumber),
+          m_NestLevel(other.m_NestLevel)
+    {
+    }
+
+    PPToken(wxString lexeme, int charIndex, int lineIndex, int nestLevel)
+        : m_Lexeme(lexeme),
+          m_TokenIndex(charIndex),
+          m_LineNumber(lineIndex),
+          m_NestLevel(nestLevel)
+    {
+    }
+
+    // Conversion operator, which can convert to wxString implicitly
+    operator wxString() const
+    {
+        return m_Lexeme;
+    }
+
+};
+
+
 
 /** @brief This is just a simple lexer class
  *
@@ -88,10 +145,10 @@ public:
                         size_t initLineNumber = 0);
 
     /** Consume and return the current token string. */
-    wxString GetToken();
+    PPToken GetToken();
 
     /** Do a "look ahead", and return the next token string. */
-    wxString PeekToken();
+    PPToken PeekToken();
 
     /** Undo the GetToken. */
     void     UngetToken();
@@ -267,7 +324,7 @@ protected:
      * function. It just move the m_TokenIndex one step forward, and return a lexeme before the
      * m_TokenIndex.
      */
-    wxString DoGetToken();
+    PPToken DoGetToken();
 
     /** check the m_Lex to see it is an identifier like token, and also if it is a macro usage,
      * replace it.
@@ -513,7 +570,7 @@ private:
     /** a lexeme string return by the Lex() function, this is a candidate token string, which may be
      * replaced if it is a macro usage
      */
-    wxString             m_Lex;
+    PPToken              m_Lex;
 
     /** These variables define the current token string and its auxiliary information,
      * such as the token name, the line number of the token, the current brace nest level.
@@ -659,6 +716,9 @@ private:
      *  @see Tokenizer::SkipComment for details
      */
     bool m_ReadingMacroDefinition;
+
+    std::deque<PPToken> m_PPTokenStream;
+
 };
 
 #endif // TOKENIZER_H
