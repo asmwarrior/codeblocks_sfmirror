@@ -933,7 +933,7 @@ PPToken Tokenizer::PeekToken()
 
         if (SkipUnwanted())
         {
-            PPToken peekToken = DoGetToken();
+            peekToken = DoGetToken();
             if (peekToken == _T("(") && m_State^tsRawExpression)
                 ReadParentheses(peekToken.m_Lexeme);
         }
