@@ -209,6 +209,8 @@ void Tokenizer::BaseInit()
     m_LastTokenIdx         = -1;
 
     m_Current = m_PPTokenStream.end();  // Initialize the pointer to the beginning of the container
+
+    m_UndoDone = false;
 }
 
 bool Tokenizer::ReadFile()
@@ -890,6 +892,8 @@ PPToken Tokenizer::GetToken()
 
         ++m_Current;  // Move the pointer forward by one step if the last token was not undone
 
+        m_UndoDone = false;
+
         return token;
     }
     else
@@ -908,6 +912,9 @@ PPToken Tokenizer::GetToken()
         PPToken token(m_Token, m_TokenIndex, m_LineNumber, m_NestLevel);
         m_PPTokenStream.push_back(token);
         m_Current = m_PPTokenStream.end();
+
+        m_UndoDone = false;
+
         return token;
     }
 }
@@ -941,6 +948,7 @@ PPToken Tokenizer::PeekToken()
             ;// peekToken.Clear();
 
         m_PPTokenStream.push_back(peekToken);
+
         return peekToken;
         // m_PeekAvailable     = true; // Set after DoGetToken() to avoid recursive PeekToken() calls.
     }
@@ -961,14 +969,23 @@ void Tokenizer::UngetToken()
 //    m_PeekLineNumber = m_LineNumber;
 //    m_PeekNestLevel  = m_NestLevel;
 
-    if (m_Current != m_PPTokenStream.begin())
+    if (m_UndoDone == true)
+        return;
+    else
     {
-        --m_Current;  // Move the pointer backward by one step
+        if (m_Current != m_PPTokenStream.begin())
+        {
+            --m_Current;  // Move the pointer backward by one step
+        }
+
+//        m_TokenIndex     = m_Current->m_TokenIndex;
+//        m_LineNumber     = m_Current->m_LineNumber;
+//        m_NestLevel      = m_Current->m_NestLevel;
+
+        m_UndoDone = true;
     }
 
-    m_TokenIndex     = m_Current->m_TokenIndex;
-    m_LineNumber     = m_Current->m_LineNumber;
-    m_NestLevel      = m_Current->m_NestLevel;
+
     //m_PeekToken      = m_Current->m_Token;
 //    m_PeekAvailable  = true;
 }

@@ -722,6 +722,8 @@ private:
     std::deque<PPToken> m_PPTokenStream;
     std::deque<PPToken>::iterator m_Current;
 
+    bool m_UndoDone;
+
 };
 
 #endif // TOKENIZER_H
