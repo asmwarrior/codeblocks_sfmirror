@@ -208,7 +208,8 @@ void Tokenizer::BaseInit()
     m_NextTokenDoc.clear();
     m_LastTokenIdx         = -1;
 
-    m_Current = m_PPTokenStream.end();  // Initialize the pointer to the beginning of the container
+//    m_Current = m_PPTokenStream.end();  // Initialize the pointer to the beginning of the container
+    m_PPTokenIndex = 0;
 
     m_UndoDone = false;
 }
@@ -881,11 +882,11 @@ bool Tokenizer::SkipUnwanted()
 
 PPToken Tokenizer::GetToken()
 {
-    if (m_Current != m_PPTokenStream.end()) // there are tokens in the stream
+    if (m_PPTokenIndex < m_PPTokenStream.size()) // there are tokens in the stream
     {
-        PPToken token = *m_Current;  // Get the value at the current position
+        PPToken token = m_PPTokenStream[m_PPTokenIndex];  // Get the value at the current position
 
-        ++m_Current;  // Move the pointer forward by one step if the last token was not undone
+        ++m_PPTokenIndex;  // Move the pointer forward by one step if the last token was not undone
 
         m_UndoDone = false;
 
@@ -906,7 +907,7 @@ PPToken Tokenizer::GetToken()
         // m_Token, m_TokenIndex, m_LineNumber, m_NestLevel
         PPToken token(m_Token, m_TokenIndex, m_LineNumber, m_NestLevel);
         m_PPTokenStream.push_back(token);
-        m_Current = m_PPTokenStream.end();
+        m_PPTokenIndex = m_PPTokenStream.size() - 1;
 
         m_UndoDone = false;
 
@@ -916,7 +917,7 @@ PPToken Tokenizer::GetToken()
 
 PPToken Tokenizer::PeekToken()
 {
-    if (m_Current == m_PPTokenStream.end())
+    if (m_PPTokenIndex >= m_PPTokenStream.size())
     {
         // suppose we have such string buffer
         //   ... x1 x2 x3 x4 x5 x6 ....
@@ -947,7 +948,7 @@ PPToken Tokenizer::PeekToken()
         return peekToken;
         // m_PeekAvailable     = true; // Set after DoGetToken() to avoid recursive PeekToken() calls.
     }
-    return *m_Current;
+    return m_PPTokenStream[m_PPTokenIndex];
 }
 /* peek is always available when we run UngetToken() once, actually the m_TokenIndex is moved
  * backward one step. Note that the m_UndoTokenIndex value is not updated in this function, which
@@ -968,9 +969,9 @@ void Tokenizer::UngetToken()
         return;
     else
     {
-        if (m_Current != m_PPTokenStream.begin())
+        if (m_PPTokenIndex > 0)
         {
-            --m_Current;  // Move the pointer backward by one step
+            --m_PPTokenIndex;  // Move the pointer backward by one step
         }
 
 //        m_TokenIndex     = m_Current->m_TokenIndex;
@@ -1012,10 +1013,22 @@ PPToken Tokenizer::DoGetToken()
             if (replaced)
                 continue;
             else
+            {
+                m_Lex.m_LineNumber = m_LineNumber;
+                m_Lex.m_NestLevel = m_NestLevel;
+                m_Lex.m_TokenIndex = m_TokenIndex;
                 return m_Lex;
+            }
+
         }
         else
+        {
+            m_Lex.m_LineNumber = m_LineNumber;
+            m_Lex.m_NestLevel = m_NestLevel;
+            m_Lex.m_TokenIndex = m_TokenIndex;
             return m_Lex;
+        }
+
     }
 }
 
