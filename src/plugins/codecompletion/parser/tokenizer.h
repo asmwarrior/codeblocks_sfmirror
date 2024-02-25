@@ -193,12 +193,22 @@ public:
     {
         //return m_NestLevel;
 
-        std::deque<PPToken>::iterator previous = m_Current - 1;
+        if (m_PPTokenStream.size() > 0)
+        {
+            if (m_PPTokenIndex > 0)
+                return m_PPTokenStream[m_PPTokenIndex-1].m_NestLevel;
+            else
+                return 0;
 
-        if ( previous == m_PPTokenStream.begin() )
-            return 0;
+        }
+        return 0;
 
-        return previous->m_NestLevel;
+//        std::deque<PPToken>::iterator previous = m_Current - 1;
+//
+//        if ( previous == m_PPTokenStream.begin() )
+//            return 0;
+//
+//        return previous->m_NestLevel;
     };
 
 //    /** Save the brace "{" level, the parser might need to ignore the nesting level in some cases */
@@ -727,7 +737,9 @@ private:
     bool m_ReadingMacroDefinition;
 
     std::deque<PPToken> m_PPTokenStream;
-    std::deque<PPToken>::iterator m_Current;
+    // std::deque<PPToken>::iterator m_Current;
+
+    unsigned int m_PPTokenIndex;
 
     bool m_UndoDone;
 
