@@ -191,19 +191,14 @@ public:
      */
     unsigned int GetNestingLevel() const
     {
-        return m_NestLevel;
-    };
+        //return m_NestLevel;
 
-    /** Save the brace "{" level, the parser might need to ignore the nesting level in some cases */
-    void SaveNestingLevel()
-    {
-        m_SavedNestingLevel = m_NestLevel;
-    };
+        std::deque<PPToken>::iterator previous = m_Current - 1;
 
-    /** Restore the brace level */
-    void RestoreNestingLevel()
-    {
-        m_NestLevel = m_SavedNestingLevel;
+        if ( previous == m_PPTokenStream.begin() )
+            return 0;
+
+        return previous->m_NestLevel;
     };
 
 //    /** Save the brace "{" level, the parser might need to ignore the nesting level in some cases */
