@@ -206,6 +206,18 @@ public:
         m_NestLevel = m_SavedNestingLevel;
     };
 
+//    /** Save the brace "{" level, the parser might need to ignore the nesting level in some cases */
+//    void SaveNestingLevel()
+//    {
+//        m_SavedNestingLevel = m_NestLevel;
+//    };
+//
+//    /** Restore the brace level */
+//    void RestoreNestingLevel()
+//    {
+//        m_NestLevel = m_SavedNestingLevel;
+//    };
+
     /** If the buffer is correctly loaded, this function return true. */
     bool IsOK() const
     {
