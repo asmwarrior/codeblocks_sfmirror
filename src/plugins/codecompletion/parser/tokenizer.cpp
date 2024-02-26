@@ -907,7 +907,7 @@ PPToken Tokenizer::GetToken()
         // m_Token, m_TokenIndex, m_LineNumber, m_NestLevel
         PPToken token(m_Token, m_TokenIndex, m_LineNumber, m_NestLevel);
         m_PPTokenStream.push_back(token);
-        m_PPTokenIndex = m_PPTokenStream.size() - 1;
+        m_PPTokenIndex = m_PPTokenStream.size();
 
         m_UndoDone = false;
 
