@@ -51,10 +51,10 @@ Total 3 tests, 3 PASS, 0 FAIL
 + PASS: tc.St  StaticVoid
 + PASS: tc.GetC  GetClass
 + PASS: tc.GetI  GetInt
-- FAIL: str.  size
-- FAIL: str.  length
++ PASS: str.  size
++ PASS: str.  length
 --------------------------------------------------------
-Total 9 tests, 6 PASS, 3 FAIL
+Total 9 tests, 8 PASS, 1 FAIL
 --------------------------------------------------------
 ********************************************************
   Testing in file: cc_function_decl_list.cpp
@@ -215,8 +215,8 @@ Total 2 tests, 2 PASS, 0 FAIL
 ********************************************************
   Testing in file: cc_stl_container_template_.cpp
 ********************************************************
-- FAIL: mpp[].  m_aaa
-- FAIL: mpp.at().  m_aaa
++ PASS: mpp[].  m_aaa
++ PASS: mpp.at().  m_aaa
 - FAIL: pri.top().  m_aaa
 - FAIL: que.front().  m_aaa
 - FAIL: sta.top().  m_aaa
@@ -228,7 +228,7 @@ Total 2 tests, 2 PASS, 0 FAIL
 - FAIL: vec[].  m_aaa
 - FAIL: vec.at().  m_aaa
 --------------------------------------------------------
-Total 12 tests, 0 PASS, 12 FAIL
+Total 12 tests, 2 PASS, 10 FAIL
 --------------------------------------------------------
 ********************************************************
   Testing in file: cc_structs.cpp
