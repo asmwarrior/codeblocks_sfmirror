@@ -19,13 +19,16 @@ enum class PPTokenKind
 {
     Identifier = 0,
     EndOfFile,
-    LeftBrace,
-    RightBrace,
+    OpenBrace,
+    CloseBrace,
     Digit,
     Char,
     String,
     DoubleColon,
     Colon,
+    CompareOperator,
+    Equals,
+    SingleCharPunctuation
 };
 
 /// Enum defines the skip state of the Tokenizer
