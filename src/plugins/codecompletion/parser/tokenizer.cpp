@@ -1065,6 +1065,7 @@ bool Tokenizer::Lex()
     else if (c == 178 || c == 179 || c == 185)
     {
         m_Lex.m_Lexeme = c;
+        m_Lex.m_Kind = PPTokenKind::Digit;
         MoveToNextChar();
     }
 #endif
@@ -1082,6 +1083,7 @@ bool Tokenizer::Lex()
         }
 
         m_Lex.m_Lexeme = m_Buffer.Mid(start, m_TokenIndex - start);
+        m_Lex.m_Kind = PPTokenKind::Digit;
     }
     else if ( (c == '"') || (c == '\'') )
     {
@@ -1115,22 +1117,32 @@ bool Tokenizer::Lex()
             MoveToNextChar();
             MoveToNextChar();
             m_Lex.m_Lexeme = m_Buffer.Mid(start, m_TokenIndex - start);
+            m_Lex.m_Kind = PPTokenKind::CompareOperator;
         }
         else
         {
             MoveToNextChar();
             // this only copies a pointer, but operator= allocates memory and does a memcpy!
             m_Lex.m_Lexeme.assign(TokenizerConsts::equal);
+            m_Lex.m_Kind = PPTokenKind::Equals;
         }
     }
     else
     {
-        if      (c == '{')
-            ++m_NestLevel;
-        else if (c == '}')
-            --m_NestLevel;
-
         m_Lex.m_Lexeme = c;
+        if (c == '{')
+        {
+            ++m_NestLevel;
+            m_Lex.m_Kind = PPTokenKind::OpenBrace;
+        }
+        else if (c == '}')
+        {
+            --m_NestLevel;
+            m_Lex.m_Kind = PPTokenKind::CloseBrace;
+        }
+        else
+            m_Lex.m_Kind = PPTokenKind::CloseBrace;
+
         MoveToNextChar();
     }
 
