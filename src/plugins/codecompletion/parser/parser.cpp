@@ -100,7 +100,7 @@ namespace ParserCommon
 
 // ----------------------------------------------------------------------------
 Parser::Parser(wxEvtHandler* parent, cbProject* project) :
-    // ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
     m_Parent(parent),
     m_Project(project),
     m_UsingCache(false),
@@ -660,7 +660,7 @@ void Parser::OnAllThreadsDone(CodeBlocksEvent& event)
 
         CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
 
-        // tell the parent(native parser and the code completion plugin) that some tasks are done
+        // tell the parent(parse manager and the code completion plugin) that some tasks are done
         // and the task pool switches to idle mode.
         ProcessParserEvent(m_ParserState, ParserCommon::idParserEnd, parseEndLog);
 
