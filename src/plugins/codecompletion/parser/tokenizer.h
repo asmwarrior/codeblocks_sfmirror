@@ -71,13 +71,11 @@ class PPToken
 public:
     wxString m_Lexeme;  // the content of the text string
     PPTokenKind m_Kind; // which kind of token, such as identifier, punctuation
-    int m_TokenIndex;   // the char index from the beginning of the char buffer
     int m_LineNumber;   // line number, it is normally 1 based
     int m_NestLevel;    // nest level, either { or (
 
     PPToken()
-        : m_TokenIndex(0),
-          m_LineNumber(0),
+        : m_LineNumber(0),
           m_NestLevel(0)
     {
     }
@@ -85,7 +83,6 @@ public:
     PPToken(const PPToken& other)
         : m_Lexeme(other.m_Lexeme),
           m_Kind(other.m_Kind),
-          m_TokenIndex(other.m_TokenIndex),
           m_LineNumber(other.m_LineNumber),
           m_NestLevel(other.m_NestLevel)
     {
@@ -93,7 +90,6 @@ public:
 
     PPToken(wxString lexeme, int charIndex, int lineIndex, int nestLevel)
         : m_Lexeme(lexeme),
-          m_TokenIndex(charIndex),
           m_LineNumber(lineIndex),
           m_NestLevel(nestLevel)
     {

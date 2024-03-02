@@ -1021,7 +1021,6 @@ PPToken Tokenizer::DoGetToken()
             {
                 m_Lex.m_LineNumber = m_LineNumber;
                 m_Lex.m_NestLevel = m_NestLevel;
-                m_Lex.m_TokenIndex = m_TokenIndex;
                 return m_Lex;
             }
 
@@ -1030,7 +1029,6 @@ PPToken Tokenizer::DoGetToken()
         {
             m_Lex.m_LineNumber = m_LineNumber;
             m_Lex.m_NestLevel = m_NestLevel;
-            m_Lex.m_TokenIndex = m_TokenIndex;
             return m_Lex;
         }
 
