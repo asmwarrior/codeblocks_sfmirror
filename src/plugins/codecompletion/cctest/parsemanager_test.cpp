@@ -181,9 +181,9 @@ void ParseManagerTest::Init()
         m_Parser.AddIncludeDir(item);
     }
 
-    wxString preDefines = AddCompilerPredefinedMacros();
-
-    Parse(preDefines, /*isLocalFile*/ false);
+//    wxString preDefines = AddCompilerPredefinedMacros();
+//
+//    Parse(preDefines, /*isLocalFile*/ false);
 
     // add the "testing" folder as include search path
     m_Parser.AddIncludeDir(wxGetCwd()+wxT("/testing"));

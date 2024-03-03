@@ -590,17 +590,19 @@ private:
     /** keep track of block nesting { } */
     unsigned int         m_NestLevel;
 
-    /** Backup the previous Token information */
-    unsigned int         m_UndoTokenIndex;
-    unsigned int         m_UndoLineNumber;
-    unsigned int         m_UndoNestLevel;
+    PPToken              m_UndoToken;
 
-    /** Peek token information */
-    bool                 m_PeekAvailable;
-    wxString             m_PeekToken;
-    unsigned int         m_PeekTokenIndex;
-    unsigned int         m_PeekLineNumber;
-    unsigned int         m_PeekNestLevel;
+//    /** Backup the previous Token information */
+//    unsigned int         m_UndoTokenIndex;
+//    unsigned int         m_UndoLineNumber;
+//    unsigned int         m_UndoNestLevel;
+//
+//    /** Peek token information */
+//    bool                 m_PeekAvailable;
+//    wxString             m_PeekToken;
+//    unsigned int         m_PeekTokenIndex;
+//    unsigned int         m_PeekLineNumber;
+//    unsigned int         m_PeekNestLevel;
 
     /** Saved token info (for PeekToken()), m_TokenIndex will be moved forward or backward when
      *  either DoGetToken() or SkipUnwanted() is called, so we should save m_TokenIndex before it
@@ -718,6 +720,7 @@ private:
     bool m_ReadingMacroDefinition;
 
     std::deque<PPToken> m_PPTokenStream;
+    std::deque<PPToken>::iterator m_Current;
 
 };
 
