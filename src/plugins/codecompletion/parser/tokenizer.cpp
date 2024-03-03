@@ -95,13 +95,13 @@ Tokenizer::Tokenizer(TokenTree* tokenTree, const wxString& filename) :
     m_TokenIndex(0),
     m_LineNumber(1),
     m_NestLevel(0),
-    m_UndoTokenIndex(0),
-    m_UndoLineNumber(1),
-    m_UndoNestLevel(0),
-    m_PeekAvailable(false),
-    m_PeekTokenIndex(0),
-    m_PeekLineNumber(0),
-    m_PeekNestLevel(0),
+//    m_UndoTokenIndex(0),
+//    m_UndoLineNumber(1),
+//    m_UndoNestLevel(0),
+//    m_PeekAvailable(false),
+//    m_PeekTokenIndex(0),
+//    m_PeekLineNumber(0),
+//    m_PeekNestLevel(0),
     m_SavedTokenIndex(0),
     m_SavedLineNumber(1),
     m_SavedNestingLevel(0),
@@ -194,12 +194,12 @@ void Tokenizer::BaseInit()
     m_TokenIndex           = 0;
     m_LineNumber           = 1;
     m_NestLevel            = 0;
-    m_UndoTokenIndex       = 0;
-    m_UndoLineNumber       = 1;
-    m_UndoNestLevel        = 0;
-    m_PeekTokenIndex       = 0;
-    m_PeekLineNumber       = 0;
-    m_PeekNestLevel        = 0;
+//    m_UndoTokenIndex       = 0;
+//    m_UndoLineNumber       = 1;
+//    m_UndoNestLevel        = 0;
+//    m_PeekTokenIndex       = 0;
+//    m_PeekLineNumber       = 0;
+//    m_PeekNestLevel        = 0;
     m_SavedTokenIndex      = 0;
     m_SavedLineNumber      = 1;
     m_SavedNestingLevel    = 0;
@@ -207,6 +207,8 @@ void Tokenizer::BaseInit()
     m_Buffer.Clear();
     m_NextTokenDoc.clear();
     m_LastTokenIdx         = -1;
+
+    m_Current = m_PPTokenStream.end();  // Initialize the pointer to the beginning of the container
 }
 
 bool Tokenizer::ReadFile()
@@ -877,11 +879,13 @@ bool Tokenizer::SkipUnwanted()
 
 PPToken Tokenizer::GetToken()
 {
-    if (m_PPTokenStream.size() > 0)
+    if (m_Current != m_PPTokenStream.end()) // there are tokens in the stream
     {
-        PPToken oldestPPToken = m_PPTokenStream.front();
-        m_PPTokenStream.pop_front();
-        return oldestPPToken;
+        PPToken token = *m_Current;  // Get the value at the current position
+
+        ++m_Current;  // Move the pointer forward by one step if the last token was not undone
+
+        return token;
     }
     else
     {
@@ -897,13 +901,15 @@ PPToken Tokenizer::GetToken()
         // construct a PPToken from the current member variables:
         // m_Token, m_TokenIndex, m_LineNumber, m_NestLevel
         PPToken token(m_Token, m_TokenIndex, m_LineNumber, m_NestLevel);
+        m_PPTokenStream.push_back(token);
+        m_Current = m_PPTokenStream.end();
         return token;
     }
 }
 
 PPToken Tokenizer::PeekToken()
 {
-    if (!m_PeekAvailable)
+    if (m_Current == m_PPTokenStream.end())
     {
         // suppose we have such string buffer
         //   ... x1 x2 x3 x4 x5 x6 ....
@@ -923,16 +929,17 @@ PPToken Tokenizer::PeekToken()
         if (SkipUnwanted())
         {
             PPToken peekToken = DoGetToken();
-            if (m_PeekToken == _T("(") && m_State^tsRawExpression)
+            if (peekToken == _T("(") && m_State^tsRawExpression)
                 ReadParentheses(peekToken.m_Lexeme);
         }
         else
             ;// peekToken.Clear();
 
-        m_PPTokenStream.push_front(peekToken);
+        m_PPTokenStream.push_back(peekToken);
         return peekToken;
         // m_PeekAvailable     = true; // Set after DoGetToken() to avoid recursive PeekToken() calls.
     }
+    return *m_Current;
 }
 /* peek is always available when we run UngetToken() once, actually the m_TokenIndex is moved
  * backward one step. Note that the m_UndoTokenIndex value is not updated in this function, which
@@ -945,14 +952,20 @@ void Tokenizer::UngetToken()
     // if (m_TokenIndex == m_UndoTokenIndex) // this means we have already run a UngetToken() before.
     //     return;
 
-    m_PeekTokenIndex = m_TokenIndex;
-    m_PeekLineNumber = m_LineNumber;
-    m_PeekNestLevel  = m_NestLevel;
-    m_TokenIndex     = m_UndoTokenIndex;
-    m_LineNumber     = m_UndoLineNumber;
-    m_NestLevel      = m_UndoNestLevel;
-    m_PeekToken      = m_Token;
-    m_PeekAvailable  = true;
+//    m_PeekTokenIndex = m_TokenIndex;
+//    m_PeekLineNumber = m_LineNumber;
+//    m_PeekNestLevel  = m_NestLevel;
+
+    if (m_Current != m_PPTokenStream.begin())
+    {
+        --m_Current;  // Move the pointer backward by one step
+    }
+
+    m_TokenIndex     = m_Current->m_TokenIndex;
+    m_LineNumber     = m_Current->m_LineNumber;
+    m_NestLevel      = m_Current->m_NestLevel;
+    //m_PeekToken      = m_Current->m_Token;
+//    m_PeekAvailable  = true;
 }
 
 /* this function always start from the index of m_TokenIndex
@@ -1516,9 +1529,9 @@ void Tokenizer::HandleConditionPreprocessor(const PreprocessorType type)
     }
 
     // reset undo token
-    m_SavedTokenIndex   = m_UndoTokenIndex = m_TokenIndex;
-    m_SavedLineNumber   = m_UndoLineNumber = m_LineNumber;
-    m_SavedNestingLevel = m_UndoNestLevel  = m_NestLevel;
+    m_SavedTokenIndex   = m_TokenIndex;
+    m_SavedLineNumber   = m_LineNumber;
+    m_SavedNestingLevel = m_NestLevel;
 }
 
 bool Tokenizer::SplitArguments(wxArrayString& results)
@@ -1598,7 +1611,7 @@ bool Tokenizer::ReplaceBufferText(const wxString& target, const Token* macro)
         // expanding the "FF", then the "member" will expand again, which leads to infinite loop.
         //m_ExpandedMacros.clear();
 
-        m_PeekAvailable = false;
+//        m_PeekAvailable = false;
         return true; // NOTE: we have to skip the problem token by returning true.
     }
     else if (macro)  // Set replace parsing state, and save first replace token index
@@ -1660,12 +1673,12 @@ bool Tokenizer::ReplaceBufferText(const wxString& target, const Token* macro)
         m_ExpandedMacros.front().m_Begin = m_TokenIndex;
 
     // Reset undo token
-    m_SavedTokenIndex   = m_UndoTokenIndex = m_TokenIndex;
-    m_SavedLineNumber   = m_UndoLineNumber = m_LineNumber;
-    m_SavedNestingLevel = m_UndoNestLevel  = m_NestLevel;
+    m_SavedTokenIndex   = m_TokenIndex;
+    m_SavedLineNumber   = m_LineNumber;
+    m_SavedNestingLevel = m_NestLevel;
 
     // since m_TokenIndex is changed, peek values becomes invalid
-    m_PeekAvailable = false;
+//    m_PeekAvailable = false;
 
     return true;
 }
