@@ -1177,7 +1177,7 @@
 			<Option target="Code-completion" />
 		</Unit>
 		<Unit filename="plugins/codecompletion/codecompletion.cpp">
-			<Option compiler="gcc" use="1" buildCommand="$compiler $options -femit-class-debug-always $includes -c $file -o $object" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options -DNOPCH -femit-class-debug-always $includes -c $file -o $object" />
 			<Option target="Code-completion" />
 		</Unit>
 		<Unit filename="plugins/codecompletion/codecompletion.h">
