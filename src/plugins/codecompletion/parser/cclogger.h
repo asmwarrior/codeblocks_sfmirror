@@ -33,6 +33,20 @@ extern long           g_idCCAddToken;
 extern long           g_idCCLogger;
 extern long           g_idCCDebugLogger;
 
+
+/** re-direct the TRACE like log messages to the C::B's log system
+ *
+ * the client code will call AddToken(), Log() and DebugLog() functions to print the log messages
+ * since the client call statement could happen either in a worker thread or the main gui thread
+ * we use a CodeBlocksThreadEvent which is thread safe message to bring the text string to the
+ * log panel of the code::blocks(the gui main thread).
+ * Log() function will re-direct the message to "Code::Blocks"'s panel
+ * it internally calls the
+ * Manager::Get()->GetLogManager()->Log(event.GetString());
+ * DebugLog() function will re-direct the message to "Code::Blocks Debug"'s panel
+ * it internally calls the
+ * Manager::Get()->GetLogManager()->DebugLog(event.GetString());
+ */
 class CCLogger
 {
 public:
