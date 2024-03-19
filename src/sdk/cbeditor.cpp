@@ -398,7 +398,7 @@ struct cbEditorInternalData
         }
     }
 
-    wxString GetUrl()
+    wxString GetUrl(wxString filename = wxEmptyString)
     {
         cbStyledTextCtrl* control = m_pOwner->GetControl();
         if (!control)
@@ -414,6 +414,9 @@ struct cbEditorInternalData
                               ")"
                               "(\\/?)([\\w\\-\\.\\?\\,\\'\\/\\\\\\+&amp;%\\$#]*)?"
                               "([\\d\\w\\.\\/\\%\\+\\-\\=\\&amp;\\?\\:\\\\\\&quot;\\'\\,\\|\\~\\;]*)"));
+
+        wxRegEx reFile(R"raw([A-Za-z0-9]+\.(jpg|jpeg|png|gif|bmp))raw");
+
         wxString url = control->GetSelectedText();
         // Is the URL selected?
         if (reUrl.Matches(url))
@@ -457,6 +460,31 @@ struct cbEditorInternalData
                 && (url.Find(match) + startPos + (int)match.Length() > control->GetCurrentPos()) )
             {
                 url = match(0, match.find_last_not_of(wxT(",.")) + 1); // trim trailing
+            }
+            else
+                url = wxEmptyString; // nope, too far from cursor, return invalid (empty)
+        }
+        else if (reFile.Matches(url))
+        {
+            wxString match = reFile.GetMatch(url);
+            if ((url.Find(match) + startPos < control->GetCurrentPos()) &&
+                (url.Find(match) + startPos + (int)match.Length() > control->GetCurrentPos()))
+            {
+                // Translate short file path to absolute file path using the current source file path
+                // match is some string like "xyz.jpg" or "xyz.png"
+                if (match.IsEmpty())
+                {
+                    return wxT("file:///") + match;
+                }
+                else
+                {
+                    // suppose we are editing a file named : "c:/abc/def.cpp"
+                    // the file contains some piece of the comments which is "xyz.jpg"
+                    // we create an absolute file path of the image file named "c:/abc/xyz.jpg"
+                    wxFileName baseFilename(filename);
+                    wxFileName newFilename(baseFilename.GetPath(), match);
+                    return wxT("file:///") + newFilename.GetFullPath();
+                }
             }
             else
                 url = wxEmptyString; // nope, too far from cursor, return invalid (empty)
@@ -3322,7 +3350,7 @@ void cbEditor::OnContextMenuEntry(wxCommandEvent& event)
     else if (id == idFoldingToggleCurrent)
         ToggleFoldBlockFromLine();
     else if (id == idOpenUrl)
-        wxLaunchDefaultBrowser(m_pData->GetUrl());
+        wxLaunchDefaultBrowser(m_pData->GetUrl(GetFilename()));
     else if (id == idSplitHorz)
         Split(stHorizontal);
     else if (id == idSplitVert)
