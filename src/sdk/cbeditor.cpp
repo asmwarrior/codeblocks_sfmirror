@@ -415,7 +415,7 @@ struct cbEditorInternalData
                               "(\\/?)([\\w\\-\\.\\?\\,\\'\\/\\\\\\+&amp;%\\$#]*)?"
                               "([\\d\\w\\.\\/\\%\\+\\-\\=\\&amp;\\?\\:\\\\\\&quot;\\'\\,\\|\\~\\;]*)"));
 
-        wxRegEx reFile(R"raw([A-Za-z0-9]+\.(jpg|jpeg|png|gif|bmp))raw");
+        wxRegEx reFile(R"raw([A-Za-z0-9]+\.(jpg|jpeg|png|gif|bmp|svg))raw");
 
         wxString url = control->GetSelectedText();
         // Is the URL selected?
