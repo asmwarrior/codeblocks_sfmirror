@@ -415,7 +415,7 @@ struct cbEditorInternalData
                               "(\\/?)([\\w\\-\\.\\?\\,\\'\\/\\\\\\+&amp;%\\$#]*)?"
                               "([\\d\\w\\.\\/\\%\\+\\-\\=\\&amp;\\?\\:\\\\\\&quot;\\'\\,\\|\\~\\;]*)"));
 
-        wxRegEx reFile(R"raw([A-Za-z0-9]+\.(jpg|jpeg|png|gif|bmp|svg))raw");
+        wxRegEx reFile(R"raw([A-Za-z0-9_/-]+\.(jpg|jpeg|png|gif|bmp|svg))raw");
 
         wxString url = control->GetSelectedText();
         // Is the URL selected?
@@ -472,7 +472,7 @@ struct cbEditorInternalData
             {
                 // Translate short file path to absolute file path using the current source file path
                 // match is some string like "xyz.jpg" or "xyz.png"
-                if (match.IsEmpty())
+                if (filename.IsEmpty())
                 {
                     return wxT("file:///") + match;
                 }
@@ -482,7 +482,9 @@ struct cbEditorInternalData
                     // the file contains some piece of the comments which is "xyz.jpg"
                     // we create an absolute file path of the image file named "c:/abc/xyz.jpg"
                     wxFileName baseFilename(filename);
-                    wxFileName newFilename(baseFilename.GetPath(), match);
+                    wxFileName newFilename(baseFilename.GetPathWithSep() + match);
+                    newFilename.Normalize(wxPATH_NORM_DOTS|wxPATH_NORM_ABSOLUTE);
+                    // the match could be either a file name such as "xyz.jpg" or a relative path as "xyz/123.jpg"
                     return wxT("file:///") + newFilename.GetFullPath();
                 }
             }
