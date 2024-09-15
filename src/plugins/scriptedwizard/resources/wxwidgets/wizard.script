@@ -51,14 +51,13 @@ GuiAppType <- 1; // Default to Dialog. 0-Dialog, 1-Frame
 AddlLibList <- _T(""); // Contains the complete list
 multi_thread_dynamic <- true; //Default to Multi-thread. For MSVC only.
 
+// whether we are using the header files and libraries from Msys2 installed by pacman
+// 0 - normal Windows build, 1 = Unix build or MSYS2
+IsMsys2Lib <- 0;
+
 
 function BeginWizard()
 {
-    local wxpath_msg = _("Please select the location of wxWidgets on your computer.\n") +
-                       _("This is the top-level folder where wxWidgets was unpacked.\n") +
-                       _("To help you, this folder must contain the subfolders\n\"include\" and \"lib\".\n\n") +
-                       _("You can also use a global variable, f.e. $(#wx)\n");
-
     WizType = Wizard.GetWizardType();
 
     if (WizType == wizProject)
@@ -72,25 +71,14 @@ function BeginWizard()
                                               _("Please select the wxWidgets version you want to use"),
                                               _T("wxWidgets 3.0;wxWidgets 3.1;wxWidgets 3.2;wxWidgets 3.3"),
                                               WxVersion); // select wxwidgets version
+        Wizard.AddGenericSingleChoiceListPage(_T("wxBuildPlatform"),
+                                              _("Please select the wxWidgets build platform want to use"),
+                                              _T("Windows;Windows-MSYS2 or Unix"),
+                                              IsMsys2Lib); // select wxwidgets build platform
         Wizard.AddProjectPathPage();
         Wizard.AddPage(_T("WxProjDetails"));
         Wizard.AddPage(_T("WxGuiSelect"));
-        if (PLATFORM == PLATFORM_MSW)
-            Wizard.AddGenericSelectPathPage(_T("WxPath"), wxpath_msg, _("wxWidgets' location:"), _T("$(#wx)"));
 
-        // we need the compiler selection before wx settings, because we 'll have
-        // to validate the settings. To do this we must know the compiler beforehand...
-        Wizard.AddCompilerPage(_T(""), _T("*"), true, true);
-        if (PLATFORM == PLATFORM_MSW)
-            Wizard.AddPage(_T("WxConf")); // only for windows
-        else
-            Wizard.AddPage(_T("WxConfUnix")); // just PCH option
-        if (PLATFORM == PLATFORM_MSW)
-        {
-            Wizard.AddPage(_T("WxConfAdvOpt")); // Wizard page to select target type
-            Wizard.AddPage(_T("WxAddLib")); // Add additional wx libraries
-            Wizard.AddPage(_T("WxAddLibMono")); // libraries options for monolithic build
-        }
     }
     else if (WizType == wizTarget)
     {
@@ -103,22 +91,11 @@ function BeginWizard()
                                               _("Please select the wxWidgets version you want to use."),
                                               _T("wxWidgets 3.0;wxWidgets 3.1;wxWidgets 3.2;wxWidgets 3.3"),
                                               WxVersion); // select wxwidgets version
-        if (PLATFORM == PLATFORM_MSW)
-            Wizard.AddGenericSelectPathPage(_T("WxPath"), wxpath_msg, _("wxWidgets' location:"), _T("$(#wx)"));
 
-        // we need the compiler selection before wx settings, because we 'll have
-        // to validate the settings. To do this we must know the compiler beforehand...
-        Wizard.AddBuildTargetPage(_T(""), false, true, _T(""), _T("*"), true);
-        if (PLATFORM == PLATFORM_MSW)
-            Wizard.AddPage(_T("WxConf")); // only for windows
-        else
-            Wizard.AddPage(_T("WxConfUnix")); // just PCH option
-        if (PLATFORM == PLATFORM_MSW)
-        {
-            Wizard.AddPage(_T("WxConfAdvOpt")); // Wizard page to select target type
-            Wizard.AddPage(_T("WxAddLib")); // Add additional wx libraries
-            Wizard.AddPage(_T("WxAddLibMono")); // libraries options for monolithic build
-        }
+        Wizard.AddGenericSingleChoiceListPage(_T("wxBuildPlatform"),
+                                              _("Please select the wxWidgets build platform want to use"),
+                                              _T("Windows;Windows-MSYS2 or Unix"),
+                                              IsMsys2Lib); // select wxwidgets build platform
     }
 }
 
@@ -140,6 +117,28 @@ function OnLeave_wxVersionPage(fwd)
     if (fwd)
     {
         WxVersion = Wizard.GetListboxSelection(_T("GenericChoiceList"));
+    }
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// wxWidgets' build platform page
+////////////////////////////////////////////////////////////////////////////////
+
+function OnEnter_wxBuildPlatform(fwd)
+{
+    if (fwd)
+    {
+        IsMsys2Lib = Wizard.GetListboxSelection(_T("GenericChoiceList"));
+    }
+    return true;
+}
+
+function OnLeave_wxBuildPlatform(fwd)
+{
+    if (fwd)
+    {
+        IsMsys2Lib = Wizard.GetListboxSelection(_T("GenericChoiceList"));
     }
     return true;
 }
@@ -212,6 +211,60 @@ function OnLeave_WxGuiSelect(fwd)
         local configManager = GetConfigManager();
         configManager.Write(_T("/wx_project_wizard/guibuilder"), GuiBuilder);
         configManager.Write(_T("/wx_project_wizard/guiapptype"), GuiAppType);
+
+        WizType = Wizard.GetWizardType();
+
+        // the following code should be moved to the leave WxGuiSelect function!
+        local wxpath_msg = _("Please select the location of wxWidgets on your computer.\n") +
+                           _("This is the top-level folder where wxWidgets was unpacked.\n") +
+                           _("To help you, this folder must contain the subfolders\n\"include\" and \"lib\".\n\n") +
+                           _("You can also use a global variable, f.e. $(#wx)\n");
+
+        // add extra pages for library settings
+        // normally, the below code should be put in the BeginWizard() function, be we will get the user to select
+        // whether he is using a normal Windows build platform or a Unix like build platform. Note the MSYS2 is
+        // running under Windows, but has Unix like wx library format.
+        if (WizType == wizProject)
+        {
+            // if we are working under the msys2 environment, the header files and lib files are similar to the Unix type
+            if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
+                Wizard.AddGenericSelectPathPage(_T("WxPath"), wxpath_msg, _("wxWidgets' location:"), _T("$(#wx)"));
+
+            // we need the compiler selection before wx settings, because we 'll have
+            // to validate the settings. To do this we must know the compiler beforehand...
+            Wizard.AddCompilerPage(_T(""), _T("*"), true, true);
+            if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
+                Wizard.AddPage(_T("WxConf")); // only for windows
+            else
+                Wizard.AddPage(_T("WxConfUnix")); // just PCH option
+
+            // for Unix platform but MSYS2, we can add more tweaks
+            if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
+            {
+                Wizard.AddPage(_T("WxConfAdvOpt")); // Wizard page to select target type
+                Wizard.AddPage(_T("WxAddLib")); // Add additional wx libraries
+                Wizard.AddPage(_T("WxAddLibMono")); // libraries options for monolithic build
+            }
+        }
+        else
+        {
+            if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
+                Wizard.AddGenericSelectPathPage(_T("WxPath"), wxpath_msg, _("wxWidgets' location:"), _T("$(#wx)"));
+
+            // we need the compiler selection before wx settings, because we 'll have
+            // to validate the settings. To do this we must know the compiler beforehand...
+            Wizard.AddBuildTargetPage(_T(""), false, true, _T(""), _T("*"), true);
+            if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
+                Wizard.AddPage(_T("WxConf")); // only for windows
+            else
+                Wizard.AddPage(_T("WxConfUnix")); // just PCH option
+            if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
+            {
+                Wizard.AddPage(_T("WxConfAdvOpt")); // Wizard page to select target type
+                Wizard.AddPage(_T("WxAddLib")); // Add additional wx libraries
+                Wizard.AddPage(_T("WxAddLibMono")); // libraries options for monolithic build
+            }
+        }
     }
     return true;
 }
@@ -302,8 +355,7 @@ function OnLeave_WxConf(fwd)
         local lib_unic_suffix;
         local lib_suffix;
         local lib = WxPath + _T("/lib/");
-        if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) ||
-            GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")))
+        if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
         {
             lib = lib + _T("gcc_");
             lib_prefix = _T("lib");
@@ -327,12 +379,7 @@ function OnLeave_WxConf(fwd)
             lib_prefix = _T("");
             lib_suffix = _T(".lib");
         }
-        else  // unknown compiler, fill variables so they are not null
-        {
-            lib = lib + _T("unk_");
-            lib_prefix = _T("");
-            lib_suffix = _T(".lib");
-        }
+
 
         if (IsDLL)
             lib = lib + _T("dll");
@@ -497,9 +544,7 @@ function OnLeave_WxConfUnix(fwd)
         IsEmpty = Wizard.IsCheckboxChecked(_T("chkWxUnixEmpty")); // Checks option for Empty Project
         WantPCH = Wizard.IsCheckboxChecked(_T("chkWxUnixConfPCH"));
 
-        if (!GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) &&
-            !GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")) &&
-            WantPCH)
+        if (!GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) && WantPCH)
         {
             ShowWarning(_("Precompiled headers currently only work for GNU GCC.\n") +
                         _("They are disabled for all other compilers."));
@@ -613,12 +658,26 @@ function SetupProject(project)
     local libdir;
     SetupAddlLibs();
     // set project options
-    if (PLATFORM != PLATFORM_MSW)
+    if (PLATFORM != PLATFORM_MSW || IsMsys2Lib)
     {
         if (ChoiceWxUnixLib == 0)
         {
-            project.AddCompilerOption(_T("`wx-config --cflags`"));
-            project.AddLinkerOption(_T("`wx-config --libs`"));
+            if (IsMsys2Lib)
+            {
+                // WX_CONFIG is a Code::Blocks global variable which can be set under
+                // MENU->Settings->Global Variable Editor, e.g. it could be:
+                // wx-config-msys2.exe --prefix=$(TARGET_COMPILER_DIR)
+                // in the above setting, you should supply wx-config-msys2.exe which can be built from
+                // https://github.com/eranif/wx-config-msys2
+                project.AddCompilerOption(_T("`$(#WX_CONFIG) --cflags`"));
+                project.AddLinkerOption(_T("`$(#WX_CONFIG) --libs`"));
+                project.AddResourceCompilerOption(_T("`$(#WX_CONFIG) --rcflags`"));
+            }
+            else
+            {
+                project.AddCompilerOption(_T("`$(#WX_CONFIG) --cflags`"));
+                project.AddLinkerOption(_T("`$(#WX_CONFIG) --libs base,core`"));
+            }
         }
         else
         {
@@ -631,8 +690,7 @@ function SetupProject(project)
         }
 
         // Now enable PCH
-        if (WantPCH && (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) ||
-                        GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*"))))
+        if (WantPCH && GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
         {
             local pchfile = project.GetFileByFilename(PCHFileName, true, true);
             if (!IsNull(pchfile))
@@ -668,8 +726,7 @@ function SetupProject(project)
             project.AddCompilerOption(_T("/D_WINDOWS"));
             project.AddLinkerOption(_T("/INCREMENTAL:NO"));
         }
-        else if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) ||
-                 GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")))
+        else if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
         {
             project.AddCompilerOption(_T("-pipe"));
             project.AddCompilerOption(_T("-mthreads"));
@@ -765,8 +822,7 @@ function SetupProject(project)
                 project.AddLinkLib(LibPrefix + _T("opengl32") + LibSuffix);
 
             // needed for wxWidgets 3.1 and newer
-            if (WxVersion >= 1 && (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*"))) ||
-                                   GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")))
+            if (WxVersion >= 1 && GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
             {
                 project.AddLinkLib(LibPrefix + _T("shlwapi") + LibSuffix);
                 project.AddLinkLib(LibPrefix + _T("version") + LibSuffix);
@@ -775,13 +831,14 @@ function SetupProject(project)
                 if (LibWxSTC)
                     project.AddLinkLib(LibPrefix + _T("imm32") + LibSuffix);
             }
+
+
         }
     }
 
 
     // enable PCH
-    if (WantPCH && (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*"))) ||
-                    GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")))
+    if (WantPCH && GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
     {
         local pchfile = project.GetFileByFilename(PCHFileName, true, true);
         if (!IsNull(pchfile))
@@ -932,15 +989,14 @@ function SetupTarget(target, is_debug)
         OptimizationsOn(target, Wizard.GetCompilerID());
 
     target.SetOptionRelation(ortLinkerOptions, orPrependToParentOptions);
-    if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) ||
-        GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")))
+    if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
         is_debug = ChkWxDebug && is_debug;
 
     if (!is_debug || IsPartialDebug)
         LibDebugSuffix = _T("");
 
     /* For Linux / Mac */
-    if (PLATFORM != PLATFORM_MSW)
+    if (PLATFORM != PLATFORM_MSW || IsMsys2Lib)
     {
         if (ChoiceWxUnixLib == 1)
         {
@@ -995,9 +1051,7 @@ function SetupTarget(target, is_debug)
         {
             target.AddCompilerOption(_T("/D__WXDEBUG__")); // For Debug Build
         }
-        else if (is_debug && !IsPartialDebug &&
-                (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) ||
-                 GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*"))))
+        else if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) && is_debug && !IsPartialDebug)
         {
             target.AddCompilerOption(_T("-D__WXDEBUG__"));
         }
@@ -1241,8 +1295,7 @@ function OnLeave_WxAddLib(fwd)
 {
     if (fwd)
     {
-        if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")) ||
-            GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("clang*")))
+        if (GetCompilerFactory().CompilerInheritsFrom(Wizard.GetCompilerID(), _T("gcc*")))
         {
             local tempLibArray = GetArrayFromString(Wizard.GetListboxStringSelections(_T("lstWxLibs")), _T(";"), false);
 
