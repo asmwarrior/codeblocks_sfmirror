@@ -24,6 +24,10 @@ RevisionVersion <- GetConfigManager().Read(_T("/opencv_project_wizard/versions/r
 //For OpenCV 2.4.4, this string is "244"
 VersionString   <- _T("")
 
+// whether we are using the header files and libraries from Msys2 installed by pacman
+// 0 - normal Windows build, 1 = Unix build or MSYS2
+IsMsys2Lib <- 1;
+
 function BeginWizard()
 {
     local intro_msg = _("Welcome to the new OpenCV project wizard!\n\n") +
@@ -37,7 +41,7 @@ function BeginWizard()
 
     // Note, here OpenCVPathDefault is just "$(#cv)"
     // Get the values (major, minor, and revision number), and construct a version string
-    if (PLATFORM == PLATFORM_MSW)
+    if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
     {
         local opencv_path_descr = _("Please select the location of OpenCV library on your computer.\n") +
                                   _("This is the top-level folder where OpenCV was installed (unpacked).\n") +
@@ -82,7 +86,7 @@ function OnEnter_VersionSelection(forward)
     // we only care to initialize if going forward
     if (forward)
     {
-        if (PLATFORM == PLATFORM_MSW)
+        if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
         {
            Wizard.SetSpinControlValue(_T("ID_SPINCTRL1"), MajorVersion);
            Wizard.SetSpinControlValue(_T("ID_SPINCTRL2"), MinorVersion);
@@ -164,7 +168,7 @@ function GetFilesDir()
 // setup the already created project
 function SetupProject(project)
 {
-    if (PLATFORM == PLATFORM_MSW)
+    if (PLATFORM == PLATFORM_MSW && !IsMsys2Lib)
     {
         // set project options
         project.AddIncludeDir(OpenCVPathInc);
@@ -183,11 +187,19 @@ function SetupProject(project)
         project.AddLinkLib(prefix + _T("core")  + _T("$(CV_VERSION).dll"));
         project.AddLinkLib(prefix + _T("highgui") + _T("$(CV_VERSION).dll"));
     }
-    else // PLATFORM != PLATFORM_MSW
+    else // PLATFORM != PLATFORM_MSW or IsMsys2Lib == 1
     {
-        // opencv-config based: things are ultra-simple :)
-        project.AddCompilerOption(_T("`opencv-config --cxxflags`"));
-        project.AddLinkerOption(_T("`opencv-config --ldstaticflags`"));
+        if (IsMsys2Lib == 1)
+        {
+            project.AddCompilerOption(_T("`pkg-config --cflags opencv4`"));
+            project.AddLinkerOption(_T("`pkg-config --libs opencv4`"));
+        }
+        else
+        {
+            project.AddCompilerOption(_T("`opencv-config --cxxflags`"));
+            project.AddLinkerOption(_T("`opencv-config --ldstaticflags`"));
+            // opencv-config based: things are ultra-simple :)
+        }
     }
 
 
