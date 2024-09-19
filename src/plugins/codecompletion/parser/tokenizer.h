@@ -105,6 +105,13 @@ public:
         return m_Lexeme;
     }
 
+    // set the PPToken's status as EOF
+    void SetEOF()
+    {
+        m_Lexeme = wxEmptyString;
+        m_Kind = PPTokenKind::EndOfFile;
+    }
+
 };
 
 
