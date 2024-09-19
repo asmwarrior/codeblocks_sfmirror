@@ -1055,8 +1055,7 @@ bool Tokenizer::Lex()
 
         if (IsEOF())
         {
-            m_Lex.m_Lexeme = wxEmptyString;
-            m_Lex.m_Kind = PPTokenKind::EndOfFile;
+            m_Lex.SetEOF();
             return false;
         }
 
@@ -1081,8 +1080,7 @@ bool Tokenizer::Lex()
 
         if (IsEOF())
         {
-            m_Lex.m_Lexeme = wxEmptyString;
-            m_Lex.m_Kind = PPTokenKind::EndOfFile;
+            m_Lex.SetEOF();
             return false;
         }
 
