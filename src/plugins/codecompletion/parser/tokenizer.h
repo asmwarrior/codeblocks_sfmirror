@@ -28,7 +28,9 @@ enum class PPTokenKind
     Colon,
     CompareOperator,
     Equals,
-    SingleCharPunctuation
+    SingleCharPunctuation,
+    Parentheses,
+    Undefined
 };
 
 /// Enum defines the skip state of the Tokenizer
@@ -75,21 +77,23 @@ public:
     int m_NestLevel;    // nest level, either { or (
 
     PPToken()
-        : m_LineNumber(0),
+        : m_Kind(PPTokenKind::Undefined),
+          m_LineNumber(0),
           m_NestLevel(0)
     {
     }
 
-    PPToken(const PPToken& other)
-        : m_Lexeme(other.m_Lexeme),
-          m_Kind(other.m_Kind),
-          m_LineNumber(other.m_LineNumber),
-          m_NestLevel(other.m_NestLevel)
-    {
-    }
+//    PPToken(const PPToken& other)
+//        : m_Lexeme(other.m_Lexeme),
+//          m_Kind(other.m_Kind),
+//          m_LineNumber(other.m_LineNumber),
+//          m_NestLevel(other.m_NestLevel)
+//    {
+//    }
 
-    PPToken(wxString lexeme, int charIndex, int lineIndex, int nestLevel)
+    PPToken(wxString lexeme, PPTokenKind kind, int lineIndex, int nestLevel)
         : m_Lexeme(lexeme),
+          m_Kind(kind),
           m_LineNumber(lineIndex),
           m_NestLevel(nestLevel)
     {
@@ -192,7 +196,7 @@ public:
     {
         //return m_NestLevel;
 
-        if (m_PPTokenStream.size() > 0)
+        if (!m_PPTokenStream.empty())
         {
             if (m_PPTokenIndex > 0)
                 return m_PPTokenStream[m_PPTokenIndex-1].m_NestLevel;

@@ -898,18 +898,19 @@ PPToken Tokenizer::GetToken()
     }
     else
     {
+        PPToken token;
         if (SkipUnwanted())
         {
-            m_Token = DoGetToken();// this function always return a fully expanded token
-            if (m_Token == "(" && m_State^tsRawExpression)
-                ReadParentheses(m_Token);
+            token = DoGetToken();// this function always return a fully expanded token
+            if (token.m_Lexeme == "(" && m_State^tsRawExpression)
+            {
+                ReadParentheses(token.m_Lexeme);
+                token.m_Kind = PPTokenKind::Parentheses;
+        }
         }
         else
-            m_Token.Clear();
+            token.m_Kind = PPTokenKind::EndOfFile;
 
-        // construct a PPToken from the current member variables:
-        // m_Token, m_TokenIndex, m_LineNumber, m_NestLevel
-        PPToken token(m_Token, m_TokenIndex, m_LineNumber, m_NestLevel);
         m_PPTokenStream.push_back(token);
         m_PPTokenIndex = m_PPTokenStream.size();
 
@@ -942,10 +943,12 @@ PPToken Tokenizer::PeekToken()
         {
             peekToken = DoGetToken();
             if (peekToken == "(" && m_State^tsRawExpression)
+            {
                 ReadParentheses(peekToken.m_Lexeme);
+                peekToken.m_Kind = PPTokenKind::Parentheses;
         }
-        else
-            ;// peekToken.Clear();
+
+        }
 
         m_PPTokenStream.push_back(peekToken);
 
@@ -1022,7 +1025,6 @@ PPToken Tokenizer::DoGetToken()
                 m_Lex.m_NestLevel = m_NestLevel;
                 return m_Lex;
             }
-
         }
         else
         {
