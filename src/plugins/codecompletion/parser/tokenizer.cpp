@@ -965,7 +965,7 @@ void Tokenizer::UngetToken()
 //    m_PeekLineNumber = m_LineNumber;
 //    m_PeekNestLevel  = m_NestLevel;
 
-    if (m_UndoDone == true)
+    if (m_UndoDone == true) // if we already run undo once, we won't allowed to undo again
         return;
     else
     {
