@@ -740,6 +740,7 @@ private:
 
     unsigned int m_PPTokenIndex;
 
+    /** we only allow one step undo, which follows the old undo code behaviour */
     bool m_UndoDone;
 
 };
