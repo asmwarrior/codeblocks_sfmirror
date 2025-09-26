@@ -112,6 +112,11 @@ public:
         m_Kind = PPTokenKind::EndOfFile;
     }
 
+    bool operator==(const wxString& other) const
+    {
+        return m_Lexeme == other;
+    }
+
 };
 
 
