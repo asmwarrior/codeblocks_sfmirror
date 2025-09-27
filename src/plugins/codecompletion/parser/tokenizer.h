@@ -117,6 +117,11 @@ public:
         return m_Lexeme == other;
     }
 
+    bool operator==(const wxChar* other) const
+    {
+        return m_Lexeme == other;
+    }
+
 };
 
 
