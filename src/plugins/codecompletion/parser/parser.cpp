@@ -86,12 +86,7 @@ namespace ParserCommon
     // when the taskpool finishes, the pointer is set to nullptr.
     static volatile Parser* s_CurrentParser = nullptr;
 
-    // NOTE (ollydbg#1#): This static variable is used to prevent changing the member variables of
-    // the Parser class from different threads. Basically, It should not be a static wxMutex for all
-    // the instances of the Parser class, it should be a member variable of the Parser class.
-    // Maybe, the author of this locker (Loaden?) thought that accessing to different Parser instances
-    // from different threads should also be avoided.
-    static          wxMutex s_ParserMutex;
+    // NOTE: s_ParserMutex has been moved to Parser class as a member variable m_ParserMutex
 
     int idParserStart = wxNewId();
     int idParserEnd   = wxNewId();
@@ -123,18 +118,18 @@ Parser::Parser(wxEvtHandler* parent, cbProject* project) :
 
 Parser::~Parser()
 {
-    // Don't wrap the s_ParserMutex lock around TerminateAllThreads(), since, it will cause a deadlock
+    // Don't wrap the m_ParserMutex lock around TerminateAllThreads(), since, it will cause a deadlock
     // in TerminateAllThreads() when calling DeleteParser() before parsing has finished.
 
     DisconnectEvents();
     TerminateAllThreads();
 
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     if (ParserCommon::s_CurrentParser == this)
         ParserCommon::s_CurrentParser = nullptr;
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
 }
 
 void Parser::ConnectEvents()
@@ -155,21 +150,21 @@ void Parser::DisconnectEvents()
 
 bool Parser::Done()
 {
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     bool done = m_BatchParseFiles.empty()
                 && m_PredefinedMacros.IsEmpty()
                 && !m_NeedMarkFileAsLocal
                 && m_Pool.Done();
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
 
     return done;
 }
 
 wxString Parser::NotDoneReason()
 {
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     wxString reason = _T(" > Reasons:");
     if (!m_BatchParseFiles.empty())
@@ -181,7 +176,7 @@ wxString Parser::NotDoneReason()
     if (!m_Pool.Done())
         reason += _T("\n- thread pool is not done yet");
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
 
     return reason;
 }
@@ -194,7 +189,7 @@ void Parser::AddPredefinedMacros(const wxString& defs)
         TRACE(_T("Parser::AddPredefinedMacros(): Stop the m_BatchTimer."));
     }
 
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     m_PredefinedMacros << defs;
 
@@ -210,17 +205,17 @@ void Parser::AddPredefinedMacros(const wxString& defs)
         m_BatchTimer.Start(ParserCommon::PARSER_BATCHPARSE_TIMER_DELAY, wxTIMER_ONE_SHOT);
     }
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
 }
 
 void Parser::ClearPredefinedMacros()
 {
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     m_LastPredefinedMacros = m_PredefinedMacros;
     m_PredefinedMacros.Clear();
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex);
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex);
 }
 
 const wxString Parser::GetPredefinedMacros() const
@@ -236,7 +231,7 @@ void Parser::AddBatchParse(const StringList& filenames)
     if (m_BatchTimer.IsRunning())
         m_BatchTimer.Stop();
 
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     if (m_BatchParseFiles.empty())
         m_BatchParseFiles = filenames;
@@ -252,7 +247,7 @@ void Parser::AddBatchParse(const StringList& filenames)
         m_BatchTimer.Start(ParserCommon::PARSER_BATCHPARSE_TIMER_DELAY, wxTIMER_ONE_SHOT);
     }
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
 }
 
 void Parser::AddParse(const wxString& filename)
@@ -262,7 +257,7 @@ void Parser::AddParse(const wxString& filename)
     if (m_BatchTimer.IsRunning())
         m_BatchTimer.Stop();
 
-    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
     m_BatchParseFiles.push_back(filename);
 
@@ -272,7 +267,7 @@ void Parser::AddParse(const wxString& filename)
         m_BatchTimer.Start(ParserCommon::PARSER_BATCHPARSE_TIMER_DELAY, wxTIMER_ONE_SHOT);
     }
 
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
 }
 
 // ----------------------------------------------------------------------------
@@ -556,8 +551,8 @@ bool Parser::Reparse(const wxString& filename, cb_unused bool isLocal)
 
 void Parser::TerminateAllThreads()
 {
-    // NOTE: This should not be locked with s_ParserMutex, otherwise we'll be stuck in an
-    // infinite loop below since the worker thread also enters s_ParserMutex.
+    // NOTE: This should not be locked with m_ParserMutex, otherwise we'll be stuck in an
+    // infinite loop below since the worker thread also enters m_ParserMutex.
     // In fact cbThreadPool maintains it's own mutex, so m_Pool is probably threadsafe.
     AbortParserThreads();
     m_Pool.AbortAllTasks();
@@ -744,9 +739,9 @@ void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
     if (   !m_BatchParseFiles.empty()
         || !m_PredefinedMacros.IsEmpty() )
     {
-        CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+        CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
-        ParserThreadedTask* thread = new ParserThreadedTask(this, ParserCommon::s_ParserMutex);
+        ParserThreadedTask* thread = new ParserThreadedTask(this, m_ParserMutex);
         TRACE(_T("Parser::OnBatchTimer(): Adding a ParserThreadedTask thread to m_Pool."));
 
         // once this function is called, the thread will be executed from the pool immediately
@@ -760,7 +755,7 @@ void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
             sendStartParseEvent = true;
         }
 
-        CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+        CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
     }
 
     if (send_event)
@@ -848,13 +843,13 @@ bool Parser::IsFileParsed(const wxString& filename)
 
     if (!isParsed)
     {
-        CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
+        CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
 
         StringList::iterator it = std::find(m_BatchParseFiles.begin(), m_BatchParseFiles.end(), filename);
         if (it != m_BatchParseFiles.end())
             isParsed = true;
 
-        CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
+        CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
     }
 
     return isParsed;
