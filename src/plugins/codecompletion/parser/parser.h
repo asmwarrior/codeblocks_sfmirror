@@ -289,6 +289,9 @@ private:
     /** referring to the C::B cbp project currently parsing in one parser per workspace mode */
     cbProject*                m_Project;
 
+    /** Mutex to protect Parser class member variables from concurrent access */
+    wxMutex                   m_ParserMutex;
+
 protected:
     /** used to detect changes between in-memory data and cache, true if loaded from cache */
     bool                      m_UsingCache;
