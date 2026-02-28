@@ -187,11 +187,11 @@ protected:
       */
     int Execute() override
     {
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(m_TokenTree->GetMutex())
 
         bool success = Parse();
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_TokenTree->GetMutex())
 
         return success ? 0 : 1;
     }
