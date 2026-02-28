@@ -817,12 +817,12 @@ size_t ParseManager::MarkItemsByAI(ccSearchData* searchData,
 
     TokenTree* tree = m_Parser->GetTempTokenTree();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     // remove old temporaries
     tree->Clear();
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     RemoveLastFunctionChildren(m_Parser->GetTokenTree(), m_LastFuncTokenIdx);
 
@@ -840,13 +840,13 @@ size_t ParseManager::MarkItemsByAI(ccSearchData* searchData,
     {
         tree = m_Parser->GetTokenTree();
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         // all tokens, no AI whatsoever
         for (size_t i = 0; i < tree->size(); ++i)
             result.insert(i);
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         return result.size();
     }
@@ -1393,21 +1393,21 @@ size_t ParseManager::FindCurrentFunctionToken(ccSearchData* searchData, TokenIdx
         std::queue<ParserComponent> ns;
         BreakUpComponents(scopeName, ns);
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(m_Parser->GetTokenTree()->GetMutex())
 
         // No critical section needed in this recursive function!
         // All functions that call this recursive FindAIMatches function, should already entered a critical section.
         FindAIMatches(m_Parser->GetTokenTree(), ns, scope_result, -1,
                       true, true, false, tkNamespace | tkClass | tkTypedef);
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_Parser->GetTokenTree()->GetMutex())
     }
 
     // if no scope, use global scope
     if (scope_result.empty())
         scope_result.insert(-1);
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(m_Parser->GetTokenTree()->GetMutex())
 
     for (TokenIdxSet::const_iterator tis_it = scope_result.begin(); tis_it != scope_result.end(); ++tis_it)
     {
@@ -1415,7 +1415,7 @@ size_t ParseManager::FindCurrentFunctionToken(ccSearchData* searchData, TokenIdx
                           true, false, tkAnyFunction | tkClass);
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_Parser->GetTokenTree()->GetMutex())
 
     return result.size();
 }
@@ -1470,7 +1470,7 @@ int ParseManager::FindCurrentFunctionStart(ccSearchData* searchData,
 
     TokenTree* tree = m_Parser->GetTokenTree();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     const int idx = GetTokenFromCurrentLine(tree, result, curLine, searchData->file);
     const Token* token = tree->at(idx);
@@ -1499,7 +1499,7 @@ int ParseManager::FindCurrentFunctionStart(ccSearchData* searchData,
                     if (g_DebugSmartSense)
                         CCLogger::Get()->DebugLog(_T("FindCurrentFunctionStart() Can't determine functions opening brace..."));
 
-                    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
                     return -1;
                 }
 
@@ -1515,11 +1515,11 @@ int ParseManager::FindCurrentFunctionStart(ccSearchData* searchData,
             CCLogger::Get()->DebugLog(wxString::Format("FindCurrentFunctionStart() Namespace='%s', proc='%s' (returning %d)",
                                                        m_LastNamespace, m_LastPROC, m_LastResult));
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
         return m_LastResult;
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     if (g_DebugSmartSense)
         CCLogger::Get()->DebugLog("FindCurrentFunctionStart() Can't determine current function...");
@@ -1551,7 +1551,7 @@ bool ParseManager::ParseBufferForUsingNamespace(const wxString& buffer, TokenIdx
 
     TokenTree* tree = m_Parser->GetTokenTree();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     for (size_t i = 0; i < ns.GetCount(); ++i)
     {
@@ -1583,7 +1583,7 @@ bool ParseManager::ParseBufferForUsingNamespace(const wxString& buffer, TokenIdx
         search_scope.insert(parentIdx);
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     return true;
 }
@@ -1618,9 +1618,9 @@ bool ParseManager::ParseFunctionArguments(ccSearchData* searchData, int caretPos
         int tokenIdx = -1;
 
         if (locked)
-            CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
         locked = true;
 
         const Token* token = tree->at(*tis_it);
@@ -1669,7 +1669,7 @@ bool ParseManager::ParseFunctionArguments(ccSearchData* searchData, int caretPos
             }
         }
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
         locked = false;
 
         if (   !buffer.IsEmpty()
@@ -1681,7 +1681,7 @@ bool ParseManager::ParseFunctionArguments(ccSearchData* searchData, int caretPos
     }
 
     if (locked)
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     return true;
 }
@@ -1699,7 +1699,7 @@ bool ParseManager::ParseLocalBlock(ccSearchData* searchData, TokenIdxSet& search
     {
         TokenTree* tree = m_Parser->GetTokenTree();
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         const Token* parent = tree->at(parentIdx);
         if (parent && (parent->m_TokenKind & tkAnyFunction))
@@ -1708,7 +1708,7 @@ bool ParseManager::ParseLocalBlock(ccSearchData* searchData, TokenIdxSet& search
             initLine = parent->m_ImplLineStart;
         }
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         // only need to parse the function body, other type of Tokens' body such as class declaration
         // should not be parsed.
@@ -1821,7 +1821,7 @@ bool ParseManager::ParseLocalBlock(ccSearchData* searchData, TokenIdxSet& search
 
                 TokenTree* tree = m_Parser->GetTokenTree();
 
-                CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+                CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
                 for (size_t i = 0; i < tree->size(); ++i)
                 {
@@ -1836,7 +1836,7 @@ bool ParseManager::ParseLocalBlock(ccSearchData* searchData, TokenIdxSet& search
                     }
                 }
 
-                CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
             }
             return true;
         }

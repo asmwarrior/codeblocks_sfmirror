@@ -303,7 +303,7 @@ void ParseManagerBase::FindCurrentFunctionScope(TokenTree*        tree,
                                                 const TokenIdxSet& procResult,
                                                 TokenIdxSet&       scopeResult)
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
     // loop on the input parameter procResult, and only record some container tokens, such as
     // class token, function token.
     for (TokenIdxSet::const_iterator it = procResult.begin(); it != procResult.end(); ++it)
@@ -329,13 +329,13 @@ void ParseManagerBase::FindCurrentFunctionScope(TokenTree*        tree,
         }
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 }
 
 void ParseManagerBase::CleanupSearchScope(TokenTree*   tree,
                                           TokenIdxSet* searchScope)
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
     // remove all the container tokens in the token index set
     for (TokenIdxSet::const_iterator it = searchScope->begin(); it != searchScope->end();)
     {
@@ -346,7 +346,7 @@ void ParseManagerBase::CleanupSearchScope(TokenTree*   tree,
             ++it;
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     // ...but always search the global scope.
     searchScope->insert(-1);
@@ -647,7 +647,7 @@ wxString ParseManagerBase::GetNextCCToken(const wxString& line,
 void ParseManagerBase::RemoveLastFunctionChildren(TokenTree* tree,
                                                   int&       lastFuncTokenIdx)
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     Token* token = tree->at(lastFuncTokenIdx);
     if (token)
@@ -657,7 +657,7 @@ void ParseManagerBase::RemoveLastFunctionChildren(TokenTree* tree,
             token->DeleteAllChildren();
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 }
 
 // Breaks up the phrase for code-completion.
@@ -761,7 +761,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
             initialScope.erase(-1);
             TokenIdxSet tempInitialScope = initialScope;
 
-            CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
             for (TokenIdxSet::const_iterator it = tempInitialScope.begin();
                  it != tempInitialScope.end(); ++it)
@@ -771,7 +771,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                     initialScope.erase(*it);
             }
 
-            CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
             if (!initialScope.empty())
                 continue;
@@ -790,7 +790,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                 CCLogger::Get()->DebugLog(wxString::Format("- Search scope: %d", *tt));
         }
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         // All functions that call the recursive GenerateResultSet should already entered a critical section.
 
@@ -800,7 +800,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
         else // case sensitive and full-match always (A / BB / CCC)
             GenerateResultSet(tree, searchText, initialScope, initialResult, true, false);
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         // now we should clear the initialScope.
         initialScope.clear();
@@ -825,8 +825,8 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                 bool isFuncOrVar = false;
 
                 if (locked)
-                    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
-                CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+                    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
+                CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
                 locked = true;
 
                 const Token* token = tree->at(id);
@@ -862,7 +862,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                     parentIndex = token->m_Index;
                 }
 
-                CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
                 locked = false;
 
                 // handle it if the token is a function/variable(i.e. is not a type)
@@ -876,7 +876,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                         // now collect the search scope for actual type of function/variable.
                         CollectSearchScopes(searchScope, actualTypeScope, tree);
 
-                        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+                        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
                         // now add the current token's parent scope;
                         const Token* currentTokenParent = tree->at(parentIndex);
@@ -888,7 +888,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                             currentTokenParent = tree->at(currentTokenParent->m_ParentIndex);
                         }
 
-                        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
                     }
 
                     // now get the tokens of variable/function.
@@ -902,13 +902,13 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
                         {
                             initialScope.insert(*it2);
 
-                            CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+                            CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
                             const Token* typeToken = tree->at(*it2);
                             if (typeToken && !typeToken->m_TemplateMap.empty())
                                 m_TemplateMap = typeToken->m_TemplateMap;
 
-                            CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                            CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
                             // and we need to add the template argument alias too.
                             AddTemplateAlias(tree, *it2, actualTypeScope, initialScope);
@@ -924,7 +924,7 @@ size_t ParseManagerBase::ResolveExpression(TokenTree*                  tree,
             }// for
 
             if (locked)
-                CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
         }
         else
         {
@@ -995,7 +995,7 @@ void ParseManagerBase::ResolveOperator(TokenTree*          tree,
     if (!tree || searchScope.empty())
         return;
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     // first,we need to eliminate the tokens which are not tokens.
     TokenIdxSet opInitialScope;
@@ -1007,7 +1007,7 @@ void ParseManagerBase::ResolveOperator(TokenTree*          tree,
             opInitialScope.insert(id);
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     // if we get nothing, just return.
     if (opInitialScope.empty())
@@ -1034,12 +1034,12 @@ void ParseManagerBase::ResolveOperator(TokenTree*          tree,
     //s tart to parse the operator overload actual type.
     TokenIdxSet opInitialResult;
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     // All functions that call the recursive GenerateResultSet should already entered a critical section.
     GenerateResultSet(tree, operatorStr, opInitialScope, opInitialResult);
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     CollectSearchScopes(searchScope, opInitialScope, tree);
 
@@ -1048,14 +1048,14 @@ void ParseManagerBase::ResolveOperator(TokenTree*          tree,
 
     for (TokenIdxSet::const_iterator it=opInitialResult.begin(); it!=opInitialResult.end(); ++it)
     {
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         wxString type;
         const Token* token = tree->at((*it));
         if (token)
             type = token->m_BaseType;
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         if (type.IsEmpty())
             continue;
@@ -1093,7 +1093,7 @@ size_t ParseManagerBase::ResolveActualType(TokenTree*         tree,
         else
             initialScope.insert(-1);
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         while (!typeComponents.empty())
         {
@@ -1119,7 +1119,7 @@ size_t ParseManagerBase::ResolveActualType(TokenTree*         tree,
             }
         }
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         if (!initialScope.empty())
             result = initialScope;
@@ -1162,14 +1162,14 @@ void ParseManagerBase::AddTemplateAlias(TokenTree*         tree,
     // and we need to add the template argument alias too.
     wxString actualTypeStr;
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     const Token* typeToken = tree->at(id);
     if (typeToken &&  typeToken->m_TokenKind == tkTypedef
                   && !typeToken->m_TemplateAlias.IsEmpty() )
         actualTypeStr = typeToken->m_TemplateAlias;
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     std::map<wxString, wxString>::const_iterator it = m_TemplateMap.find(actualTypeStr);
     if (it != m_TemplateMap.end())
@@ -1629,7 +1629,7 @@ void ParseManagerBase::CollectSearchScopes(const TokenIdxSet& searchScope,
                                            TokenIdxSet&       actualTypeScope,
                                            TokenTree*         tree)
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     for (TokenIdxSet::const_iterator pScope=searchScope.begin(); pScope!=searchScope.end(); ++pScope)
     {
@@ -1651,7 +1651,7 @@ void ParseManagerBase::CollectSearchScopes(const TokenIdxSet& searchScope,
         }
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 }
 
 // No critical section needed in this recursive function!
@@ -1731,7 +1731,7 @@ void ParseManagerBase::ComputeCallTip(TokenTree*         tree,
                                       const TokenIdxSet& tokens,
                                       wxArrayString&     items)
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     for (TokenIdxSet::const_iterator it = tokens.begin(); it != tokens.end(); ++it)
     {
@@ -1815,7 +1815,7 @@ void ParseManagerBase::ComputeCallTip(TokenTree*         tree,
 
     }// for
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 }
 
 bool ParseManagerBase::PrettyPrintToken(TokenTree*   tree,

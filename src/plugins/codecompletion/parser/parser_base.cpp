@@ -185,12 +185,13 @@ ParserBase::ParserBase()
 
 ParserBase::~ParserBase()
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
-
+    CC_LOCKER_TRACK_TT_MTX_LOCK(m_TokenTree->GetMutex())
     Delete(m_TokenTree);
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_TokenTree->GetMutex())
+    
+    CC_LOCKER_TRACK_TT_MTX_LOCK(m_TempTokenTree->GetMutex())
     Delete(m_TempTokenTree);
-
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_TempTokenTree->GetMutex())
 }
 
 TokenTree* ParserBase::GetTokenTree() const
@@ -385,7 +386,7 @@ size_t ParserBase::FindTokensInFile(const wxString& filename, TokenIdxSet& resul
 
     TRACE(_T("Parser::FindTokensInFile() : Searching for file '%s' in tokens tree..."), filename.wx_str());
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(m_TokenTree->GetMutex())
 
     TokenIdxSet tmpresult;
     if ( m_TokenTree->FindTokensInFile(filename, tmpresult, kindMask) )
@@ -399,7 +400,7 @@ size_t ParserBase::FindTokensInFile(const wxString& filename, TokenIdxSet& resul
         tokens_found = result.size();
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_TokenTree->GetMutex())
 
     return tokens_found;
 }

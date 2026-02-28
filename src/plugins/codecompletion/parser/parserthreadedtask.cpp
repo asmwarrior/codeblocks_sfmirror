@@ -133,11 +133,11 @@ int MarkFileAsLocalThreadedTask::Execute()
         {
             TokenTree* tree = m_Parser->GetTokenTree();
 
-            CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
             tree->MarkFileTokensAsLocal(pf->file.GetFullPath(), true, m_Project);
 
-            CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
         }
     }
 

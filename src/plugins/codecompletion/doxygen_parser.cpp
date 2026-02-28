@@ -687,12 +687,12 @@ wxString DocumentationHelper::GenerateHTML(int tokenIdx, TokenTree* tree)
 
     html += _T("<a name=\"top\"></a>");
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     Token* token = tree->at(tokenIdx);
     if (!token || token->m_Name.IsEmpty())
     {
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         return wxEmptyString;
     }
@@ -821,7 +821,7 @@ wxString DocumentationHelper::GenerateHTML(int tokenIdx, TokenTree* tree)
             break;
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     html += br + br;
 
@@ -858,7 +858,7 @@ wxString DocumentationHelper::GenerateHTML(const TokenIdxSet& tokensIdx, TokenTr
     html += _T("Multiple matches, please select one:<br>");
     TokenIdxSet::const_iterator it = tokensIdx.begin();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     while (it != tokensIdx.end())
     {
@@ -871,7 +871,7 @@ wxString DocumentationHelper::GenerateHTML(const TokenIdxSet& tokensIdx, TokenTr
         ++it;
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     html += _T("<br>");
 

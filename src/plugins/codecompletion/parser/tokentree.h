@@ -26,7 +26,7 @@ typedef std::map< size_t, TokenIdxSet,       std::less<size_t> > TokenFileMap;
 typedef std::map< size_t, FileParsingStatus, std::less<size_t> > TokenFileStatusMap;
 typedef std::map< int, wxString >                                TokenIdxStringMap;
 
-extern wxMutex s_TokenTreeMutex;
+// extern wxMutex s_TokenTreeMutex;
 
 /** a container class to hold all the Tokens getting from parsing stage
  *
@@ -333,6 +333,9 @@ protected:
       */
     bool CheckChildRemove(const Token* token, int fileIdx);
 
+    /** Mutex to protect access to this TokenTree instance */
+    wxMutex m_TreeMutex;
+
     /** This is a string->TokenIndexSet map. E.g. we have a class Token named "AAA", also, we can
      *  have a function Token named "AAA", they are  different Tokens, but they share the same name.
      *  So we may have an tree point "AAA" -> <30, 40> map in the TokenSearchTree. Note here 30 and
@@ -376,6 +379,10 @@ protected:
 
     /** Set: file indices */
     TokenFileSet        m_FilesToBeReparsed;
+    
+public:
+    /** Get the mutex for this TokenTree instance */
+    wxMutex& GetMutex() { return m_TreeMutex; }
 };
 
 #endif // TOKENTREE_H

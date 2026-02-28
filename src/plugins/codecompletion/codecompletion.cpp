@@ -885,7 +885,7 @@ void CodeCompletion::DoCodeComplete(int caretPos, cbEditor* ed, std::vector<CCTo
 
             TokenTree* tree = parser->GetTokenTree();
 
-            CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
             for (TokenIdxSet::const_iterator it = result.begin(); it != result.end(); ++it)
             {
@@ -927,7 +927,7 @@ void CodeCompletion::DoCodeComplete(int caretPos, cbEditor* ed, std::vector<CCTo
                 }
             }
 
-            CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
             if (m_ParseManager.LastAISearchWasGlobal() && !preprocessorOnly)
             {
@@ -1239,7 +1239,7 @@ std::vector<CodeCompletion::CCToken> CodeCompletion::GetTokenAt(int pos, cbEdito
     {
         TokenTree* tree = parser->GetTokenTree();
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         for (TokenIdxSet::const_iterator it = result.begin(); it != result.end(); ++it)
         {
@@ -1252,7 +1252,7 @@ std::vector<CodeCompletion::CCToken> CodeCompletion::GetTokenAt(int pos, cbEdito
             }
         }
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
     }
 
     return tokens;
@@ -1344,13 +1344,13 @@ void CodeCompletion::DoAutocomplete(const CCToken& token, cbEditor* ed)
     ParserBase* parser = m_ParseManager.GetParserPtr();
     if (parser && token.id != -1 && m_CCAutoAddParentheses && m_ParseManager.HasParser())
     {
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
-
         TokenTree* tree = parser->GetTokenTree();
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
+
         const Token* tkn = tree->at(token.id);
 
         if (!tkn)
-        {   CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex) }
+        {   CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex()) }
         else
         {
             bool addParentheses = tkn->m_TokenKind & tkAnyFunction;
@@ -1362,7 +1362,7 @@ void CodeCompletion::DoAutocomplete(const CCToken& token, cbEditor* ed)
             // cache args to avoid locking
             wxString tokenArgs = tkn->GetStrippedArgs();
 
-            CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+            CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
             if (addParentheses)
             {
@@ -1379,7 +1379,7 @@ void CodeCompletion::DoAutocomplete(const CCToken& token, cbEditor* ed)
                     }
                     else // Found something, but result may be false positive.
                     {
-                        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+                        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
                         const Token* parent = tree->at(funcToken);
                         // Make sure that parent is not container (class, etc)
@@ -1390,7 +1390,7 @@ void CodeCompletion::DoAutocomplete(const CCToken& token, cbEditor* ed)
                             insideFunction = false;
                         }
 
-                        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+                        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
                     }
                 }
 
@@ -1773,12 +1773,12 @@ void CodeCompletion::OnGotoFunction(cb_unused wxCommandEvent& event)
 
     TokenTree* tree = parser->GetTempTokenTree();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     if (tree->empty())
     {
         cbMessageBox(_("No functions parsed in this file..."));
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
     }
     else
     {
@@ -1807,7 +1807,7 @@ void CodeCompletion::OnGotoFunction(cb_unused wxCommandEvent& event)
 
         tree->clear();
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         iterator.Sort();
         GotoFunctionDlg dlg(Manager::Get()->GetAppWindow(), &iterator);
@@ -1880,7 +1880,7 @@ void CodeCompletion::OnGotoDeclaration(wxCommandEvent& event)
 
     TokenTree* tree = parser->GetTokenTree();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     // handle destructor function, first we try to see if it is a destructor, we simply do a semantic
     // check of the token under cursor, otherwise, it is a variable.
@@ -2026,7 +2026,7 @@ void CodeCompletion::OnGotoDeclaration(wxCommandEvent& event)
         }
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     if (selections.GetCount() > 1)
     {
@@ -2579,7 +2579,7 @@ int CodeCompletion::DoClassMethodDeclImpl()
 
 //    TokenTree* tree = m_ParseManager.GetParser().GetTokenTree(); // The one used inside InsertClassMethodDlg
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(parser->GetTokenTree()->GetMutex())
 
     // open the insert class dialog
     wxString filename = ed->GetFilename();
@@ -2608,7 +2608,7 @@ int CodeCompletion::DoClassMethodDeclImpl()
         success = 0;
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(parser->GetTokenTree()->GetMutex())
 
     return success;
 }
@@ -2631,7 +2631,7 @@ int CodeCompletion::DoAllMethodsImpl()
     wxArrayString paths = m_ParseManager.GetAllPathsByFilename(ed->GetFilename());
     TokenTree*    tree  = parser->GetTokenTree();
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
     // get all filenames' indices matching our mask
     TokenFileSet result;
@@ -2646,7 +2646,7 @@ int CodeCompletion::DoAllMethodsImpl()
 
     if (result.empty())
     {
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         cbMessageBox(_("Could not find any file match in parser's database."), _("Warning"), wxICON_WARNING);
         return -5;
@@ -2683,7 +2683,7 @@ int CodeCompletion::DoAllMethodsImpl()
 
     if (arr.empty())
     {
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         cbMessageBox(_("No classes declared or no un-implemented class methods found."), _("Warning"), wxICON_WARNING);
         return -5;
@@ -2763,7 +2763,7 @@ int CodeCompletion::DoAllMethodsImpl()
         success = 0;
     }
 
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     return success;
 }
@@ -3040,7 +3040,7 @@ void CodeCompletion::ParseFunctionsAndFillToolbar()
 
         TokenTree* tree = parser->GetTokenTree();
 
-        CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
 
         for (TokenIdxSet::const_iterator it = result.begin(); it != result.end(); ++it)
         {
@@ -3072,7 +3072,7 @@ void CodeCompletion::ParseFunctionsAndFillToolbar()
             }
         }
 
-        CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
         FunctionsScopeVec& functionsScopes = funcdata->m_FunctionsScope;
         NameSpaceVec& nameSpaces = funcdata->m_NameSpaces;
@@ -3304,7 +3304,7 @@ void CodeCompletion::UpdateEditorSyntax(cbEditor* ed)
     std::set<wxString> varList;
     TokenIdxSet parsedTokens;
 
-    CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_LOCK(tree->GetMutex())
     for (TokenIdxSet::const_iterator it = result.begin(); it != result.end(); ++it)
     {
         Token* token = tree->at(*it);
@@ -3355,7 +3355,7 @@ void CodeCompletion::UpdateEditorSyntax(cbEditor* ed)
             }
         }
     }
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
+    CC_LOCKER_TRACK_TT_MTX_UNLOCK(tree->GetMutex())
 
     EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
     if (!colour_set)
