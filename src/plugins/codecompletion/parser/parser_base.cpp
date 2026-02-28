@@ -185,13 +185,25 @@ ParserBase::ParserBase()
 
 ParserBase::~ParserBase()
 {
-    CC_LOCKER_TRACK_TT_MTX_LOCK(m_TokenTree->GetMutex())
-    Delete(m_TokenTree);
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_TokenTree->GetMutex())
-    
-    CC_LOCKER_TRACK_TT_MTX_LOCK(m_TempTokenTree->GetMutex())
-    Delete(m_TempTokenTree);
-    CC_LOCKER_TRACK_TT_MTX_UNLOCK(m_TempTokenTree->GetMutex())
+    if (m_TokenTree)
+    {
+        // basically all the working thread is aborted before this function call
+        // so, we don't need such hack here
+        CC_LOCKER_TRACK_TT_MTX_LOCK(m_TokenTree->GetMutex())
+        TokenTree* tokenTree = m_TokenTree;
+        m_TokenTree = nullptr;
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tokenTree->GetMutex())
+        Delete(tokenTree);
+    }
+
+    if (m_TempTokenTree)
+    {
+        CC_LOCKER_TRACK_TT_MTX_LOCK(m_TempTokenTree->GetMutex())
+        TokenTree* tempTokenTree = m_TempTokenTree;
+        m_TempTokenTree = nullptr;
+        CC_LOCKER_TRACK_TT_MTX_UNLOCK(tempTokenTree->GetMutex())
+        Delete(tempTokenTree);
+    }
 }
 
 TokenTree* ParserBase::GetTokenTree() const
