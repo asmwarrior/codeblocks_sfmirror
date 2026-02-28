@@ -87,6 +87,9 @@ namespace ParserCommon
     static volatile Parser* s_CurrentParser = nullptr;
 
     // NOTE: s_ParserMutex has been moved to Parser class as a member variable m_ParserMutex
+    
+    // Mutex to protect s_CurrentParser from concurrent access
+    static          wxMutex s_CurrentParserMutex;
 
     int idParserStart = wxNewId();
     int idParserEnd   = wxNewId();
@@ -124,12 +127,10 @@ Parser::~Parser()
     DisconnectEvents();
     TerminateAllThreads();
 
-    CC_LOCKER_TRACK_P_MTX_LOCK(m_ParserMutex)
-
+    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_CurrentParserMutex)
     if (ParserCommon::s_CurrentParser == this)
         ParserCommon::s_CurrentParser = nullptr;
-
-    CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_CurrentParserMutex)
 }
 
 void Parser::ConnectEvents()
@@ -663,7 +664,9 @@ void Parser::OnAllThreadsDone(CodeBlocksEvent& event)
         m_ParserState = ParserCommon::ptUndefined;
 
         // the current parser is not parsing any files, so set the static pointer to NULL
+        CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_CurrentParserMutex)
         ParserCommon::s_CurrentParser = nullptr;
+        CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_CurrentParserMutex)
         TRACE(_T("Parser::OnAllThreadsDone(): Post a PARSER_END event"));
     }
 }
@@ -718,13 +721,16 @@ void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
     if (Manager::IsAppShuttingDown())
         return;
 
+    CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_CurrentParserMutex)
     if (ParserCommon::s_CurrentParser && ParserCommon::s_CurrentParser != this)
     {
         // Current batch parser already exists, just return later
         TRACE(_T("Parser::OnBatchTimer(): Starting m_BatchTimer."));
         m_BatchTimer.Start(ParserCommon::PARSER_BATCHPARSE_TIMER_DELAY_LONG, wxTIMER_ONE_SHOT);
+        CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_CurrentParserMutex)
         return;
     }
+    CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_CurrentParserMutex)
 
     StartStopWatch(); // start counting the time we take for parsing the files
 
@@ -746,6 +752,7 @@ void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
 
         // once this function is called, the thread will be executed from the pool immediately
         m_Pool.AddTask(thread, true);
+        CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_CurrentParserMutex)
         if (ParserCommon::s_CurrentParser)
             send_event = false;
         else // Have not done any batch parsing yet -> assign parser
@@ -754,6 +761,7 @@ void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
             m_StopWatch.Start(); // reset timer
             sendStartParseEvent = true;
         }
+        CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_CurrentParserMutex)
 
         CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex)
     }
