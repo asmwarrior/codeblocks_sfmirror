@@ -42,6 +42,10 @@ static size_t CountLines(const wxString& buffer, size_t from_pos, const size_t t
     return number_of_lines;
 }
 
+// try to parse some string like below:
+// TODO (john#1#2023-10-01): fix bug
+// Note that the first # followed by the priority value
+// the second # followed by the date string
 void ParseBufferForTODOs(TodoItemsMap &outItemsMap, ToDoItems &outItems,
                          const wxArrayString &startStrings, const wxArrayString &allowedTypes,
                          const wxString& buffer, const wxString& filename)
