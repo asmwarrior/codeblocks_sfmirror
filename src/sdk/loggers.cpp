@@ -169,6 +169,17 @@ wxWindow* TextCtrlLogger::CreateControl(wxWindow* parent)
 {
     if (!control)
         control = new wxTextCtrl(parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH | wxTE_NOHIDESEL | wxTE_AUTO_URL);
+
+    // Enable double buffering to stop flickering
+    if (control)
+    {
+        control->SetDoubleBuffered(true);
+        // In your event table or Bind calls:
+        control->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent& event) {
+            // Do nothing here to skip the default background clearing
+        });
+    }
+
     return control;
 }
 
