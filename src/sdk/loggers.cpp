@@ -170,13 +170,18 @@ wxWindow* TextCtrlLogger::CreateControl(wxWindow* parent)
     if (!control)
         control = new wxTextCtrl(parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH | wxTE_NOHIDESEL | wxTE_AUTO_URL);
 
-    // Enable double buffering to stop flickering
+
     if (control)
     {
-        control->SetDoubleBuffered(true);
-        // In your event table or Bind calls:
+        // Check if it's already enabled (either by default or previously set)
+        if (!control->IsDoubleBuffered())
+        {
+            control->SetDoubleBuffered(true);
+        }
+
+        // Always a good idea to bind this if you're still seeing "white flashes"
         control->Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent& event) {
-            // Do nothing here to skip the default background clearing
+            // Leave empty to prevent background clearing
         });
     }
 
