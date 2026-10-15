@@ -3249,10 +3249,27 @@ void BrowseTracker::OnPageChanged(wxAuiNotebookEvent& event)
     // Enforced stack based switching for BrowseTracker
     if (1)
     {
+        // The selection can be invalid here: wxAuiNotebook::DoRemovePage()
+        // sends wxEVT_AUINOTEBOOK_PAGE_CHANGED with wxNOT_FOUND as selection
+        // when the page being removed was the last one (e.g. while the
+        // StartHerePage is destroyed). wxAuiNotebook::GetPage() asserts on
+        // such an index, so bail out before querying it.
+        const int sel = event.GetSelection();
+        if (sel < 0 || sel >= static_cast<int>(m_pNotebook->GetPageCount()))
+        {
+            event.Skip(); // allow others to process it too
+            return;
+        }
+
         wxWindow*        wnd;
         cbNotebookStack* body;
         cbNotebookStack* tmp;
-        wnd = m_pNotebook->GetPage(event.GetSelection());
+        wnd = m_pNotebook->GetPage(sel);
+        if (wnd == nullptr)
+        {
+            event.Skip(); // allow others to process it too
+            return;
+        }
         for (body = m_pNotebookStackHead; body->next != nullptr; body = body->next)
         {
             if (wnd == body->next->window)
@@ -3289,10 +3306,24 @@ void BrowseTracker::OnPageClose(wxAuiNotebookEvent& event)
     // Enforced stack based switching for BrowseTracker
     if (1)
     {
+        // Same as in OnPageChanged(): the selection may be out of range
+        // (wxNOT_FOUND) if the event was sent for a page that is already gone.
+        const int sel = event.GetSelection();
+        if (sel < 0 || sel >= static_cast<int>(m_pNotebook->GetPageCount()))
+        {
+            event.Skip(); // allow others to process it too
+            return;
+        }
+
         wxWindow* wnd;
         cbNotebookStack* body;
         cbNotebookStack* tmp;
-        wnd = m_pNotebook->GetPage(event.GetSelection());
+        wnd = m_pNotebook->GetPage(sel);
+        if (wnd == nullptr)
+        {
+            event.Skip(); // allow others to process it too
+            return;
+        }
         for (body = m_pNotebookStackHead; body->next != nullptr; body = body->next)
         {
             if (wnd == body->next->window)
