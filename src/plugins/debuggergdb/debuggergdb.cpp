@@ -900,7 +900,9 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             newLibPath << "." << libPathSep;
 
             CompilerCommandGenerator *generator = actualCompiler->GetCommandGenerator(m_pProject);
-            newLibPath << GetStringFromArray(generator->GetLinkerSearchDirs(target), libPathSep);
+            // Strip empty quote pairs (e.g. from a global variable defined as ""), otherwise
+            // entries like "E:\wx\lib\gcc_dll""" end up in PATH and are not valid directories.
+            newLibPath << cbStripEmptyQuotes(GetStringFromArray(generator->GetLinkerSearchDirs(target), libPathSep));
             delete generator;
 
             if (newLibPath.Mid(newLibPath.Length() - 1, 1) != libPathSep)

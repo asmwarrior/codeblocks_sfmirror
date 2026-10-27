@@ -273,6 +273,22 @@ bool NeedQuotes(const wxString &str)
     return !str.IsEmpty() && str.GetChar(0) != _T('"') && (hasSpace || hasParen);
 }
 
+wxString cbStripEmptyQuotes(const wxString& str)
+{
+    if (str.Find(_T('"')) == wxNOT_FOUND)
+        return str;
+
+    // An empty quote pair ("") is swallowed by the shell/process launcher, so it does
+    // not hurt in a command line. In a path used as an environment variable (PATH,
+    // LD_LIBRARY_PATH) it makes the whole entry invalid, so remove all of them.
+    wxString result(str);
+    // Repeat, because there can be more than one pair (or nested ones).
+    while (result.Replace("\"\"", wxEmptyString, true) != 0)
+        ;
+
+    return result;
+}
+
 wxString EscapeSpaces(const wxString& str)
 {
     wxString ret = str;

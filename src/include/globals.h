@@ -231,6 +231,15 @@ extern DLLIMPORT wxString UnixFilename(const wxString& filename, wxPathFormat fo
 extern DLLIMPORT void QuoteStringIfNeeded(wxString& str);
 extern DLLIMPORT bool NeedQuotes(const wxString &str);
 
+/** \brief Remove all empty quote pairs (@c "" ) from a string.
+ *
+ * An empty quote pair is harmless inside a command line, the shell or the process
+ * launcher simply swallows it. It is fatal inside a path though, e.g. a global
+ * compiler variable defined as @c "" expands to @c ".../lib/gcc_dll""" which is not
+ * an existing directory when put into @c PATH .
+ */
+extern DLLIMPORT wxString cbStripEmptyQuotes(const wxString& str);
+
 /// Escapes spaces and tabs (NOT quoting the string)
 extern DLLIMPORT wxString EscapeSpaces(const wxString& str);
 

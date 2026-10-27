@@ -2036,7 +2036,9 @@ wxString cbGetDynamicLinkerPathForTarget(cbProject* project, ProjectBuildTarget*
         wxString libPath;
         const wxString libPathSep = platform::windows ? ";" : ":";
         libPath << "." << libPathSep;
-        libPath << GetStringFromArray(generator->GetLinkerSearchDirs(target), libPathSep);
+        // Strip empty quote pairs (e.g. a global variable defined as ""), they would
+        // make the path entry invalid when used as PATH/LD_LIBRARY_PATH.
+        libPath << cbStripEmptyQuotes(GetStringFromArray(generator->GetLinkerSearchDirs(target), libPathSep));
         if (!libPath.IsEmpty() && libPath.Mid(libPath.Length() - 1, 1) == libPathSep)
             libPath.Truncate(libPath.Length() - 1);
 

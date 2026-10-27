@@ -193,7 +193,12 @@ wxString UserVariableManager::Replace(const wxString& variable, std::vector<wxSt
             Reload();
         }
     }
-    return value;
+
+    // A variable is sometimes defined as "" (an empty quote pair) just to make
+    // $(#var) expand to nothing. Drop those empty quote pairs here, so that they
+    // can't leak into paths, e.g. "$(#wx.lib)/gcc_dll$(#wx.cfg)" turning into
+    // ".../gcc_dll""" which is an invalid directory when put into PATH.
+    return cbStripEmptyQuotes(value);
 }
 
 std::vector<wxString> UserVariableManager::GetVariableSetNames() const
